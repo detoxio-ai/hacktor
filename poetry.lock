@@ -579,6 +579,32 @@ MarkupSafe = ">=2.0"
 i18n = ["Babel (>=2.7)"]
 
 [[package]]
+name = "markdown"
+version = "3.5.2"
+description = "Python implementation of John Gruber's Markdown."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "Markdown-3.5.2-py3-none-any.whl", hash = "sha256:d43323865d89fc0cb9b20c75fc8ad313af307cc087e84b657d9eec768eddeadd"},
+    {file = "Markdown-3.5.2.tar.gz", hash = "sha256:e1ac7b3dc550ee80e602e71c1d168002f062e49f1b11e26a36264dafd4df2ef8"},
+]
+
+[package.extras]
+docs = ["mdx-gh-links (>=0.2)", "mkdocs (>=1.5)", "mkdocs-gen-files", "mkdocs-literate-nav", "mkdocs-nature (>=0.6)", "mkdocs-section-index", "mkdocstrings[python]"]
+testing = ["coverage", "pyyaml"]
+
+[[package]]
+name = "markdown-builder"
+version = "0.1.2"
+description = "Create Markdown from a Python program"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "markdown-builder-0.1.2.tar.gz", hash = "sha256:389bc534edf42b9b8a04c530477180dce970b82191e7c3d9821f27957235edbb"},
+    {file = "markdown_builder-0.1.2-py3-none-any.whl", hash = "sha256:47a947494c63dc9676055ad2b5b58721661d9174df250425fa8ee5e926d06c87"},
+]
+
+[[package]]
 name = "markupsafe"
 version = "2.1.5"
 description = "Safely add untrusted strings to HTML/XML markup."
@@ -1666,4 +1692,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "e103f4bf68e224c5a5b1b47e8226087953dc7b2d3cf109ed75464ed15d647941"
+content-hash = "14ab43c204e1d224d1ed7289a328cb6bb1325a6e700feb74ceab46cab727df9c"

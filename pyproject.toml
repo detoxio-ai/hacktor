@@ -20,6 +20,8 @@ grpcio = "*"
 grpcio-tools = "*"
 transformers = "^4.38.2"
 torch = "^2.2.1"
+markdown = "^3.5.2"
+markdown-builder = "^0.1.2"
 
 
 [[tool.poetry.source]]

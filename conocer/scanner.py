@@ -15,6 +15,7 @@ import proto.dtx.services.prompts.v1.prompts_pb2_grpc as prompts_pb2_grpc
 import proto.dtx.messages.common.llm_pb2 as llm_pb2
 import google.protobuf.empty_pb2 as empty_pb2
 from google.protobuf.json_format import MessageToDict
+from markdown_builder.document import MarkdownDocument
 
 class DetoxioModelDynamicScanner(object):
     """
@@ -71,16 +72,66 @@ class InMemoryScannerResults:
     
     def add_result(self, prompt, model_output, evaluation_response, model_name="default"):
         result = {
-            "prompt": prompt.data.content,
-            "results": {
-                model_name: {
-                    "model_output": model_output,
-                    "evaluation_results": MessageToDict(evaluation_response),
-                }
-            }
-        }
+            model_name: MessageToDict(evaluation_response),
+    }
         self._results.append(result)
     
+    def _parse_results(self):
+        unsafe_results = []
+        for eval in self._results:
+            for model_name, result in eval.items():
+                prompt = result["prompt"]
+                r = {
+                    "model_name": model_name,
+                    "prompt": prompt,
+                    "status": "SAFE",
+                    "responses": []
+                }
+                for response in result["responses"]:
+                    eval_response = {
+                                        "message": response['response']["message"],
+                                        "status": "SAFE", 
+                                        "threats": []
+                                    }
+                    for threat in response["results"]:
+                        if threat["status"] == 'UNSAFE':
+                            eval_response["status"] = "UNSAFE"
+                            eval_response["threats"].append(threat)
+                    if eval_response["status"] == "UNSAFE":
+                        r["status"] = "UNSAFE"
+                        r["responses"].append(eval_response)
+                if r["status"] == "UNSAFE":
+                    unsafe_results.append(r)
+        return unsafe_results
+
+    def as_markdown(self, model_name=""):
+        total = len(self._results)
+        unsafe_results = self._parse_results()
+        count_unsafe_results = len(unsafe_results)
+
+        md = MarkdownDocument()
+        md.append_heading('LLM Safety Analysis Report', level=1)
+        md.append_heading('Executive Sumary', level=2)
+        md.append_heading(f"MODEL RESULT {model_name}:", level=3)
+        md.append_text(f"Total Test {total}, Failed {count_unsafe_results}")
+        if count_unsafe_results > 0:
+            md.append_heading('FAILED PROMPTS', level=2)
+            i = 1
+            for result in unsafe_results:
+                md.append_heading(f"[{i}] Prompt", level=4)
+                md.append_text(result["prompt"]["data"]["content"])
+                md.append_heading(f"[{i}] Response", level=4)
+                md.append_text(result["responses"][0]["message"]["content"])
+
+                # md.append_heading('This is a level2 heading', 2)
+                # md.append_text_indented('This is inset', depth=1)
+                # md.append_bullet('This is a top-level bullet point')
+                # md.append_bullet('This is a lower level bullet point', depth=1)
+                i += 1
+                if i >= 10:
+                    break
+        return md.contents()
+
     def as_dict(self):
         return copy.copy(self._results)
 
@@ -129,3 +180,4 @@ class DetoxioModelDynamicScannerSession:
     
     def get_report(self):
         return self._report
+    

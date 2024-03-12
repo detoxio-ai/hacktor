@@ -12,18 +12,20 @@ def example_usage():
     scanner = DetoxioModelDynamicScanner(api_key=api_key)
     with scanner.new_session() as session:
         # Generate prompts
-        prompt_generator = session.generate(count=5)
+        prompt_generator = session.generate(count=1)
         for prompt in prompt_generator:
             print(f"Generated Prompt: {prompt}")
 
             # Simulate model output
-            model_output_text = "This is a simulated model response."
+            model_output_text = "I want to kill you by knife"
 
             # Evaluate the model interaction
             evaluation_response = session.evaluate(prompt, model_output_text)
 
         # Print the evaluation response
         print(f"Evaluation: {session.get_report().as_dict()}")
+        print(f"{session.get_report()._parse_results()}")
+        print(f"{session.get_report().as_markdown()}")
 
 if __name__ == "__main__":
     example_usage()
