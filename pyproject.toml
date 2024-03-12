@@ -18,6 +18,8 @@ detoxio-api-protocolbuffers-python = "*"
 detoxio_api_grpc_python = "*"
 grpcio = "*"
 grpcio-tools = "*"
+transformers = "^4.38.2"
+torch = "^2.2.1"
 
 
 [[tool.poetry.source]]
