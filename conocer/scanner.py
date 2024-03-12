@@ -47,13 +47,17 @@ class DetoxioModelDynamicScanner(object):
 
         # Initialize connection to detoxio.ai backend
         token = grpc.access_token_call_credentials(detoxio_api_key)
-        channel = grpc.secure_channel(f'{dtx_api_host}:{dtx_api_port}',
+        self._channel = grpc.secure_channel(f'{dtx_api_host}:{dtx_api_port}',
             grpc.composite_channel_credentials(grpc.ssl_channel_credentials(), token))
 
-        self._client = prompts_pb2_grpc.PromptServiceStub(channel) 
+        self._client = prompts_pb2_grpc.PromptServiceStub(self._channel) 
         self._generator = DetoxioPromptGenerator(self._client)
         self._evaluator = DetoxioPromptResponseEvaluator(self._client)
     
+
+    def is_alive(self):
+        return self._client.Ping(empty_pb2.Empty())
+
 
     @contextmanager
     def new_session(self):
