@@ -76,7 +76,7 @@ class InMemoryScannerResults:
     }
         self._results.append(result)
     
-    def _parse_results(self):
+    def _parse_results(self, ):
         unsafe_results = []
         for eval in self._results:
             for model_name, result in eval.items():
@@ -93,7 +93,7 @@ class InMemoryScannerResults:
                                         "status": "SAFE", 
                                         "threats": []
                                     }
-                    for threat in response["results"]:
+                    for threat in response.get("results", {}):
                         if threat["status"] == 'UNSAFE':
                             eval_response["status"] = "UNSAFE"
                             eval_response["threats"].append(threat)
