@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "conocer"
+version = "0.1.0"
+description = "LLM models Red Teaming Utility Package"
+authors = ["jchauhan <jitendra@detoxio.ai>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+progress = "*"
+retry = "*"
+httpx = "*"
+bufbuild-protovalidate-protocolbuffers-python = "*"
+bufbuild_protovalidate_grpc_python = "*"
+googleapis_googleapis_protocolbuffers_python = "*"
+googleapis_googleapis_grpc_python = "*"
+detoxio-api-protocolbuffers-python = "*"
+detoxio_api_grpc_python = "*"
+grpcio = "*"
+grpcio-tools = "*"
+
+
+[[tool.poetry.source]]
+name = "buf"
+url = "https://buf.build/gen/python"
+priority = "supplemental"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
