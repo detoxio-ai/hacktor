@@ -2,58 +2,66 @@
 
 ## Objective
 
-The objective of  Conocer is to facilitate Red Teaming activities by leveraging the Detoxio AI's LLM Testing Platform. This project enables users to interact with the LLM by providing prompts and evaluating the generated responses. The prompts are evaliated using on various categories such as Toxicity, Misuse, Crime, Hate Speech etc.
+The objective of Conocer is to facilitate Red Teaming activities by leveraging the Detoxio AI's LLM Testing Platform. This project enables users to interact with the LLM by providing prompts and evaluating the generated responses. The prompts are evaluated based on various categories such as Toxicity, Misuse, Crime, Hate Speech, etc.
 
 ## Features
 
-- **Prompt Generation:** Generate toxic prompts using the Testing Platform
+- **Prompt Generation:** Generate toxic prompts using the Testing Platform.
 
-- **Model Reponse Evaluation:** Evaluate the target LLM's responses to specific prompts, and add results for report generation
+- **Model Response Evaluation:** Evaluate the target LLM's responses to specific prompts and add results for report generation.
 
-- **Toxic Categories Evaluated**: 
-{'threat': {'threatClass': 'TOXICITY', 'threatCategory': 'HATE_SPEECH'}, 'status': 'SAFE'}, {'threat': {'threatClass': 'TOXICITY', 'threatCategory': 'HARASSMENT'}, 'status': 'SAFE'}, {'threat': {'threatClass': 'TOXICITY', 'threatCategory': 'BULLYING'}, 'status': 'SAFE'}, {'threat': {'threatClass': 'TOXICITY', 'threatCategory': 'PROFANITY'}, 'status': 'SAFE'}, {'threat': {'threatClass': 'TOXICITY', 'threatCategory': 'SEXUAL_ASSAULT'}, 'status': 'SAFE'}, {'threat': {'threatClass': 'MALICIOUS_USE', 'threatCategory': 'MALWARE_GENERATION'}, 'status': 'SAFE'}, {'threat': {'threatClass': 'MALICIOUS_USE', 'threatCategory': 'WEAPONIZATION'}, 'status': 'SAFE'}, {'threat': {'threatClass': 'MALICIOUS_USE', 'threatCategory': 'FRAUD'}, 'status': 'SAFE'}, {'threat': {'threatClass': 'MALICIOUS_USE', 'threatCategory': 'PHISHING'}, 'status': 'SAFE'}, {'threat': {'threatClass': 'MALICIOUS_USE', 'threatCategory': 'THEFT'}, 'status': 'SAFE'}, {'threat': {'threatClass': 'MALICIOUS_USE', 'threatCategory': 'VIOLENCE'}, 'status': 'SAFE'}, {'threat': {'threatClass': 'MALICIOUS_USE', 'threatCategory': 'CRIME'}, 'status': 'SAFE'}, {'threat': {'threatClass': 'MALICIOUS_USE', 'threatCategory': 'CBRN'}, 'status': 'SAFE'}], 'evaluatedAt': '2024-03-12T07:32:57.420461Z'}]}}}}
+- **Toxic Categories Evaluated:**
+  - Threat Class: Toxicity, Threat Categories: Hate Speech, Harassment, Bullying, Profanity, Sexual Assault
+  - Malicious Use Categories: Malware Generation, Weaponization, Fraud, Phishing, Theft, Violence, Crime, CBRN
 
 ## Installation
 
-To install Project Conocer, follow these proprietary steps:
+To install Project Conocer, follow these steps:
 
 ```bash
-pip install s
-```
-
-```bash
+git clone https://github.com/safedep/conocer.git
+cd conocer 
 poetry install
 ```
+
 
 ## Usage
 
 ```python
-from conocer import DetoxioModelDynamicScannerSession
+# Example usage code for DetoxioModelDynamicScanner
 
-# Create instances of DetoxioPromptGenerator and DetoxioPromptResponseEvaluator
-# (Assuming these classes are already defined)
-generator = DetoxioPromptGenerator(your_grpc_client)
-evaluator = DetoxioPromptResponseEvaluator(your_grpc_client)
+# Assuming you have already imported the necessary modules and classes
 
-# Create an instance of DetoxioModelDynamicScannerSession
-with DetoxioModelDynamicScannerSession(generator, evaluator) as scanner_session:
-    # Use the generator within the context
-    for prompt in scanner_session.generate(count=5):
-        print(f"Generated Prompt: {prompt}")
+from conocer.scanner import DetoxioModelDynamicScanner
 
-    # Simulate model output
-    model_output_text = "This is a simulated model response."
+def example_usage():
+    # Provide your API key or set it as an environment variable
+    api_key = ''
 
-    # Evaluate the model interaction
-    prompt_to_evaluate = next(scanner_session.generate(count=1))  # Choose a prompt to evaluate
-    evaluation_response = scanner_session.evaluate(prompt_to_evaluate, model_output_text)
+    # Create an instance of DetoxioModelDynamicScanner using a context manager
+    scanner = DetoxioModelDynamicScanner(api_key=api_key)
+    with scanner.new_session() as session:
+        # Generate prompts
+        prompt_generator = session.generate(count=5)
+        for prompt in prompt_generator:
+            print(f"Generated Prompt: {prompt}")
 
-    # Print the evaluation response
-    print(f"Evaluation Response: {evaluation_response}")
+            # Simulate model output
+            model_output_text = "This is a simulated model response."
+
+            # Evaluate the model interaction
+            evaluation_response = session.evaluate(prompt, model_output_text)
+
+        # Print the evaluation response
+        print(f"Evaluation: {session.get_report().as_dict()}")
+
+if __name__ == "__main__":
+    example_usage()
 ```
 
 ## License
 
-This project is distributed under the Detoxio proprietary license. For licensing inquiries, please contact Detoxio.
+This project is distributed under the Apache License, Version 2.0. See the [LICENSE](LICENSE) file for details.
 
 © [Detoxio](https://detoxio.ai)
+```
