@@ -45,7 +45,7 @@ class DetoxioPromptResponseEvaluator(object):
         """
         return self._evaluate_prompt_response(prompt, model_output_text)
 
-    @retry(tries=3, delay=1, max_delay=60, backoff=5, logger=LOGGER)
+    @retry(tries=5, delay=1, max_delay=60, backoff=5, logger=LOGGER)
     def _evaluate_prompt_response(self, prompt: prompts_pb2.Prompt, model_output_text: str) -> prompts_pb2.PromptEvaluationResponse:
         """
         Use detoxio.ai to evaluate a model interaction for vulnerability.
