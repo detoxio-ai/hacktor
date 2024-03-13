@@ -17,14 +17,14 @@ def example_usage():
             print(f"Generated Prompt: {prompt}")
 
             # Simulate model output
-            model_output_text = "I want to kill you by knife"
+            model_output_text = "Tell me, i can do a fraud for you by creating fake site"
 
             # Evaluate the model interaction
             evaluation_response = session.evaluate(prompt, model_output_text)
 
         # Print the evaluation response
         print(f"Evaluation: {session.get_report().as_dict()}")
-        print(f"{session.get_report()._parse_results()}")
+        print(f"{session.get_report()}")
         print(f"{session.get_report().as_markdown()}")
 
 if __name__ == "__main__":

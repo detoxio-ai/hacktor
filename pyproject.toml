@@ -23,17 +23,24 @@ torch = "^2.2.1"
 markdown = "^3.5.2"
 markdown-builder = "^0.1.2"
 
-
 [[tool.poetry.source]]
 name = "buf"
 url = "https://buf.build/gen/python"
 priority = "supplemental"
 
-[tool.poetry.group.dev.dependencies]
+[tool.poetry.dev-dependencies]
 pytest = "^8.0.2"
+tox = "*"
+
+[tox]
+requires = { tox = ">=4" }
+env_list = [
+    "py{310}",
+    "lint",
+    "type",
+    "coverage"
+]
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-
