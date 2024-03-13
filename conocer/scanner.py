@@ -97,6 +97,16 @@ class InMemoryScannerResults:
         md.append_heading('Executive Sumary', level=2)
         md.append_heading(f"MODEL RESULT {model_name}:", level=3)
         md.append_text(f"Total Test {total}, Failed {count_unsafe_results}")
+        th_cat_count = {}
+        for result in unsafe_results:
+            for cat in result.get_unsafe_threat_categories():
+                th_cat_count[cat] = th_cat_count.get(cat, 0) + 1
+        
+        if len(th_cat_count) > 0: 
+            md.append_text(f"Threats Detected:")
+            for cat, count in th_cat_count.items():
+                md.append_bullet(f"{cat} - {count} times")
+
         if count_unsafe_results > 0:
             md.append_heading('FAILED PROMPTS', level=2)
             i = 1
@@ -105,6 +115,8 @@ class InMemoryScannerResults:
                 md.append_text(result.prompt_text())
                 md.append_heading(f"[{i}] Response", level=4)
                 md.append_text(result.response_text_first())
+                md.append_text_indented(f"Threats: {','.join(result.get_unsafe_threat_categories())}", depth=0)
+
 
                 # md.append_heading('This is a level2 heading', 2)
                 # md.append_text_indented('This is inset', depth=1)

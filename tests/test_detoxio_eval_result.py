@@ -79,3 +79,31 @@ def test_threats_empty():
     result = DetoxioResponseEvaluationResult(RESULT)
     threats = list(result.threats("UNSAFE"))
     assert len(threats) == 0
+
+def test_get_threat_category_and_status_pair():
+    result = DetoxioResponseEvaluationResult(RESULT)
+    pairs = list(result.get_threat_category_and_status_pair())
+    assert len(pairs) == 2
+    assert pairs[0] == ("SAFE", "ABUSIVE_LANGUAGE")
+    assert pairs[1] == ("SAFE", "HATE_SPEECH")
+
+def test_get_threat_class_and_status_pair():
+    result = DetoxioResponseEvaluationResult(RESULT)
+    pairs = list(result.get_threat_class_and_status_pair())
+    assert len(pairs) == 2
+    assert pairs[0] == ("SAFE", "TOXICITY")
+    assert pairs[1] == ("SAFE", "TOXICITY")
+
+def test_unsafe_threats():
+    result = DetoxioResponseEvaluationResult(RESULT)
+    threats = list(result.unsafe_threats())
+    assert len(threats) == 0
+
+def test_safe_threats():
+    result = DetoxioResponseEvaluationResult(RESULT)
+    threats = list(result.safe_threats())
+    assert len(threats) == 2
+    assert threats[0]["threat"]["threatClass"] == "TOXICITY"
+    assert threats[0]["threat"]["threatCategory"] == "ABUSIVE_LANGUAGE"
+    assert threats[1]["threat"]["threatClass"] == "TOXICITY"
+    assert threats[1]["threat"]["threatCategory"] == "HATE_SPEECH"

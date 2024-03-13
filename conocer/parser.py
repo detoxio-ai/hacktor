@@ -94,10 +94,90 @@ class DetoxioResponseEvaluationResult:
         for response in self.__result["responses"]:
             for threat in response.get("threats", []):
                 if threat["status"] in filter_by_status:
-                    yield(threat)
+                    yield(copy.copy(threat))
     
+    def unsafe_threats(self):
+        """
+        Get the unsafe threats from the evaluation result.
+
+        Returns:
+            Iterator[dict]: An iterator yielding dictionaries representing unsafe threats.
+                Example:
+                [
+                    {
+                        'threat': {'threatClass': 'TOXICITY', 'threatCategory': 'ABUSIVE_LANGUAGE'},
+                        'status': 'SAFE'
+                    }
+                ]
+        """
+        return self.threats(filter_by_status="UNSAFE")
+
+    def safe_threats(self):
+        """
+        Get the safe threats from the evaluation result.
+
+        Returns:
+            Iterator[dict]: An iterator yielding dictionaries representing safe threats.
+                Example:
+                [
+                    {
+                        'threat': {'threatClass': 'TOXICITY', 'threatCategory': 'ABUSIVE_LANGUAGE'},
+                        'status': 'SAFE'
+                    }
+                ]
+        """
+        return self.threats(filter_by_status="SAFE")
+
+
+    def get_threat_category_and_status_pair(self):
+        """
+        Get pairs of threat category and status from the evaluation result.
+
+        Yields:
+            tuple: A tuple containing the threat status and threat category.
+                Example:
+                ('SAFE', 'ABUSIVE_LANGUAGE')
+        """
+        for threat in self.threats():
+            yield((threat['status'], threat['threat']['threatCategory']))
+            
+    def get_threat_class_and_status_pair(self):
+        """
+        Get pairs of threat class and status from the evaluation result.
+
+        Yields:
+            tuple: A tuple containing the threat status and threat class.
+                Example:
+                ('SAFE', 'TOXICITY')
+        """
+        for threat in self.threats():
+            yield((threat['status'], threat['threat']['threatClass']))
+
+
+    def get_unsafe_threat_categories(self):
+        """
+        Get pairs of threat category and status from the evaluation result.
+
+        Yields:
+            tuple: A tuple containing the threat status and threat category.
+                Example:
+                ('SAFE', 'ABUSIVE_LANGUAGE')
+        """
+        for threat in self.threats(filter_by_status="UNSAFE"):
+            yield(threat['threat']['threatCategory'])
+
+
     def as_dict(self):
+        """
+        Return the evaluation result as a dictionary.
+
+        Returns:
+            dict: A copy of the evaluation result dictionary.
+        """
         return copy.copy(self.__result)
+
+
+    
 
 
 class DetoxioEvaluationResponseParser:
