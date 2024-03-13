@@ -113,11 +113,12 @@ class InMemoryScannerResults:
             md.append_heading('FAILED PROMPTS', level=1)
             i = 1
             for result in unsafe_results:
+
                 md.append_heading(f"[{i}] Prompt", level=4)
-                md.append_text_indented(f"Threats: {','.join(result.get_unsafe_threat_categories())}", depth=0)
-                md.append_text(f"```{result.prompt_text()}```")
+                md.append_text(f"```{result.prompt_text()}```\n")
                 md.append_heading(f"[{i}] Response", level=4)
-                md.append_text(f"```{result.response_text_first()}```")
+                md.append_text(f"```{result.response_text_first()}```\n")
+                md.append_text_indented(f"Threats: {','.join(result.get_unsafe_threat_categories())}\n", depth=0)
 
                 # md.append_heading('This is a level2 heading', 2)
                 # md.append_text_indented('This is inset', depth=1)
