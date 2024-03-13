@@ -37,7 +37,7 @@ def example_usage(count=1):
         # Print the evaluation response
         # print(f"Evaluation: {session.get_report().as_dict()}")
         # print(f"{session.get_report()}")
-        print(f"{session.get_report().as_markdown()}")
+        print(f"{session.get_report().as_markdown('gpt2')}")
     
 
 if __name__ == "__main__":

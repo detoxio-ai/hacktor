@@ -95,8 +95,10 @@ class InMemoryScannerResults:
         md = MarkdownDocument()
         md.append_heading('LLM Safety Analysis Report', level=1)
         md.append_heading('Executive Sumary', level=2)
-        md.append_heading(f"MODEL RESULT {model_name}:", level=3)
-        md.append_text(f"Total Test {total}, Failed {count_unsafe_results}")
+        md.append_heading(f"Score {int(100-count_unsafe_results*100/total)}/100:", level=3)
+        if model_name:
+            md.append_text(f"Model: {model_name}")
+        md.append_text(f"Total Tests {total}, Failed Tests {count_unsafe_results}")
         th_cat_count = {}
         for result in unsafe_results:
             for cat in result.get_unsafe_threat_categories():
@@ -106,17 +108,16 @@ class InMemoryScannerResults:
             md.append_text(f"Threats Detected:")
             for cat, count in th_cat_count.items():
                 md.append_bullet(f"{cat} - {count} times")
-
+        md.append_text("\n")
         if count_unsafe_results > 0:
-            md.append_heading('FAILED PROMPTS', level=2)
+            md.append_heading('FAILED PROMPTS', level=1)
             i = 1
             for result in unsafe_results:
                 md.append_heading(f"[{i}] Prompt", level=4)
-                md.append_text(result.prompt_text())
-                md.append_heading(f"[{i}] Response", level=4)
-                md.append_text(result.response_text_first())
                 md.append_text_indented(f"Threats: {','.join(result.get_unsafe_threat_categories())}", depth=0)
-
+                md.append_text(f"```{result.prompt_text()}```")
+                md.append_heading(f"[{i}] Response", level=4)
+                md.append_text(f"```{result.response_text_first()}```")
 
                 # md.append_heading('This is a level2 heading', 2)
                 # md.append_text_indented('This is inset', depth=1)
