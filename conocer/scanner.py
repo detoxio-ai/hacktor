@@ -87,6 +87,14 @@ class InMemoryScannerResults:
     def unsafe_results(self) -> list:
         return list(filter(lambda x: x.is_unsafe(), self._results) )
 
+    # def __get_threat_cat_stats(self):
+    #     report = {}
+    #     for result in self._results:
+    #         for status, cat in result.get_threat_category_and_status_pair():
+    #             report[cat] = report.get(cat, {})
+    #             report[cat][status] = report[cat].get(status, 0) + 1
+
+
     def as_markdown(self, model_name=""):
         total = self.total_results()
         unsafe_results = self.unsafe_results()
