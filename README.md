@@ -24,6 +24,10 @@ cd conocer
 poetry install
 ```
 
+Install it as a dependency using pip
+```bash
+pip install conocer@git+https://github.com/safedep/conocer detoxio-api-protocolbuffers-python detoxio_api_grpc_python   --upgrade --extra-index-url https://buf.build/gen/python
+```
 
 ## Usage
 
