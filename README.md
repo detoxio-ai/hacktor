@@ -49,6 +49,13 @@ It works as follows:
 
 **Quick Start**
 
+Specify the Detoxio API Key. More information here on [API Docs](https://docs.detoxio.ai/api/authentication)
+
+```bash
+export DETOXIO_API_KEY=xxxx
+```
+
+Run it
 ```bash
 poetry run conocer webapps <URL>
 ```
