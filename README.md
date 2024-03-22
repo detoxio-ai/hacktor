@@ -18,18 +18,25 @@ With Conocer, ensure the robustness and security of your GenAI applications acro
 
 ## Getting Started
 
-To install Project Conocer, follow these steps:
+**Clone and install Conocer**
 
 ```bash
 git clone https://github.com/safedep/conocer.git
 cd conocer 
 poetry install
 ```
+
+**Install using pip**
+```bash
+pip install conocer@git+https://github.com/safedep/conocer@main \
+    detoxio-api-protocolbuffers-python detoxio_api_grpc_python  \
+    --upgrade --extra-index-url https://buf.build/gen/python
+```
+
 In order to assist in crawling GenAI web app features testing, setup playwright
 
 ```bash
 playwright install
-
 ```
 **Various browsers should be installed including Chromium. Ignore the error at the end**
 
