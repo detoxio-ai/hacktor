@@ -38,7 +38,8 @@ Human Assisted Testing of GenAI Apps and Models:
     webapps_parser = subparsers.add_parser('webapps', help='Scan web apps')
     webapps_parser.add_argument("url", type=str, help="Starting URL for crawling.")
     webapps_parser.add_argument("-s", "--session", type=str, help="Path to session file for storing crawl results")
-    webapps_parser.add_argument("--skip_crawling", action="store_true", help="Run the crawler in a synchronous manner")
+    webapps_parser.add_argument("--skip_crawling", action="store_true", help="Skip crawling, use recorded session to test")
+    webapps_parser.add_argument("--skip_testing", action="store_true", help="Skill Testing, possibly just record session")
     webapps_parser.add_argument("--save_session", action="store_true", help="Save Crawling Session for next time")
     webapps_parser.add_argument("--prompt_prefix", type=str, default="", help="Add a prefix to every prompt to make prompts more contextual")
     webapps_parser.add_argument("-m", "--speed", type=int, default=300, help="set time in milliseconds for executions of APIs.")
@@ -65,8 +66,16 @@ Human Assisted Testing of GenAI Apps and Models:
     report = None
     if args.subcommand == 'webapps':
         try:
+            if not args.skip_testing and not args.skip_crawling:
+                logging.warning("Both Testing and Crawling can not be specified")
             crawl_options = CrawlerOptions(speed=args.speed, browser_name=args.browser, headless=False)
-            scan_options = ScannerOptions(session_file_path=args.session, skip_crawling=args.skip_crawling, save_session=args.save_session, crawler_options=crawl_options, no_of_tests=args.no_of_tests, prompt_prefix=args.prompt_prefix)
+            scan_options = ScannerOptions(session_file_path=args.session, 
+                                          skip_crawling=args.skip_crawling, 
+                                          skip_testing=args.skip_testing, 
+                                          save_session=args.save_session, 
+                                          crawler_options=crawl_options, 
+                                          no_of_tests=args.no_of_tests, 
+                                          prompt_prefix=args.prompt_prefix)
             scanner = GenAIWebScanner(scan_options)
             report = scanner.scan(args.url)
         except Exception as ex:

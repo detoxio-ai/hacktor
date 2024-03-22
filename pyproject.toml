@@ -19,12 +19,12 @@ detoxio_api_grpc_python = "*"
 grpcio = "*"
 grpcio-tools = "*"
 transformers = "^4.38.2"
-torch = "^2.2.1"
 markdown = "^3.5.2"
 markdown-builder = "^0.1.2"
 playwright = "^1.42.0"
 validators = "^0.23.2"
 haralyzer = "^2.4.0"
+#torch = "^2.2.1"
 
 [[tool.poetry.source]]
 name = "buf"

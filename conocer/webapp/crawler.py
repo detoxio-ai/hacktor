@@ -58,7 +58,7 @@ class HumanAssistedWebCrawler:
                         f'<< {response.status} {response.url} \n'))
                 page.on("close", lambda: print("The page has been closed"))
                 await page.goto(url)
-                print(await page.title())
+                await page.title()
                 await page.wait_for_selector('text="None"')
             except playwright._impl._errors.TargetClosedError:
                 pass

@@ -20,6 +20,7 @@ class ScannerOptions:
                  save_session=True,
                  no_of_tests=10, 
                  prompt_prefix="", 
+                skip_testing=False, 
                  fuzz_markers=None):
         self.session_file_path = session_file_path
         self.skip_crawling = skip_crawling
@@ -28,6 +29,7 @@ class ScannerOptions:
         self.no_of_tests = no_of_tests
         self.prompt_prefix = prompt_prefix
         self.fuzz_markers = fuzz_markers or FUZZING_MARKERS
+        self.skip_testing = skip_testing
 
 class GenAIWebScanner:
 
@@ -50,6 +52,9 @@ class GenAIWebScanner:
                                                 speed=self.options.crawler_options.speed, 
                                                 browser_name=self.options.crawler_options.browser_name)
             crawler.crawl(url, session_file_path=session_file_path)
+
+        if self.options.skip_testing:
+            return None
 
         logging.warn("Skipped Human Assisted Crawling. Using Recorded Session to perform testing..")
         conv = Har2RemoteModel(session_file_path, 
