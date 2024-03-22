@@ -5,6 +5,8 @@ from conocer.webapp.har import Har2RemoteModel
 from conocer.webapp.crawler import HumanAssistedWebCrawler
 from conocer.scanner import DetoxioModelDynamicScanner
 
+FUZZING_MARKERS = ["[[FUZZ]]", "[FUZZ]", "FUZZ", "<<FUZZ>>", "[[CONOCER]]", "[CONOCER]", "CONOCER", "<<CONOCER>>"]
+
 class CrawlerOptions:
     def __init__(self, speed=350, browser_name="Chromium", headless=False):
         self.headless=headless
@@ -17,13 +19,15 @@ class ScannerOptions:
                  crawler_options=None, 
                  save_session=True,
                  no_of_tests=10, 
-                 prompt_prefix=""):
+                 prompt_prefix="", 
+                 fuzz_markers=None):
         self.session_file_path = session_file_path
         self.skip_crawling = skip_crawling
         self.crawler_options = crawler_options
         self.save_session = save_session
         self.no_of_tests = no_of_tests
         self.prompt_prefix = prompt_prefix
+        self.fuzz_markers = fuzz_markers or FUZZING_MARKERS
 
 class GenAIWebScanner:
 
@@ -32,26 +36,33 @@ class GenAIWebScanner:
     
     def scan(self, url):
         session_file_path = self.options.session_file_path
-
         if not self.options.skip_crawling:
             if not session_file_path:
                 outtmp = tempfile.NamedTemporaryFile(prefix="har_file_path", 
                                                      suffix=".har", 
-                                                     delete=(not self.options.delete_session))
+                                                     delete=(not self.options.save_session))
                 session_file_path = outtmp.name
                 logging.debug("Crawled Results will stored at a location: %s", session_file_path)
 
-            if not self.options.skip_crawling:
-                print("Starting Human Assisted Crawler. Close the Browser to start scanning")
-                crawler = HumanAssistedWebCrawler(headless=self.options.crawler_options.headless, 
-                                                    speed=self.options.crawler_options.speed, 
-                                                    browser_name=self.options.crawler_options.browser_name)
-                crawler.crawl(url, session_file_path=session_file_path)
+            logging.debug("Starting Browser to record session from User...")
+            logging.warn("Starting Human Assisted Crawler. The system will wait for user to record session. Close the Browser to start scanning")
+            crawler = HumanAssistedWebCrawler(headless=self.options.crawler_options.headless, 
+                                                speed=self.options.crawler_options.speed, 
+                                                browser_name=self.options.crawler_options.browser_name)
+            crawler.crawl(url, session_file_path=session_file_path)
 
-        conv = Har2RemoteModel(session_file_path, prompt_prefix=self.options.prompt_prefix)
+        logging.warn("Skipped Human Assisted Crawling. Using Recorded Session to perform testing..")
+        conv = Har2RemoteModel(session_file_path, 
+                               prompt_prefix=self.options.prompt_prefix, 
+                               fuzz_markers=self.options.fuzz_markers)
+        i = 0
         for model in conv.convert():
+            i += 1
             model.prechecks()
             return self.__scan(model)
+        if i == 0:
+            logging.warn("No requests found in session with Fuzzing Marker %s. Skipping testing..", )
+
 
     def __scan(self, model):
         # Provide your API key or set it as an environment variable

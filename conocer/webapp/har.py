@@ -10,14 +10,14 @@ from haralyzer import HarParser, HarPage
 class URLManipulator:
     """A class to manipulate URLs by replacing query parameters containing a specific marker."""
 
-    def __init__(self, fuzz_marker="[FUZZ]"):
+    def __init__(self, fuzz_markers):
         """
         Initialize the URLManipulator object.
 
         Parameters:
-        - fuzz_marker (str): Marker used to identify parameters to be replaced.
+        - fuzz_markers (list):String Markers used to identify parameters to be replaced.
         """
-        self._fuzz_marker = fuzz_marker
+        self._fuzz_markers = fuzz_markers
     
     def replace_fuzz(self, url, new_value):
         """
@@ -33,8 +33,9 @@ class URLManipulator:
         parsed_url = urlparse(url)
         query_params = parse_qs(parsed_url.query)
         for key, value in query_params.items():
-            if any(self._fuzz_marker in param for param in value):
-                query_params[key] = [new_value if self._fuzz_marker in param else param for param in value]
+            if any(marker in param for param in value for marker in self._fuzz_markers):
+                query_params[key] = [new_value if any(marker in param for marker in self._fuzz_markers) else param for param in value]
+
 
         modified_query = urlencode(query_params, doseq=True)
         modified_url = urlunparse((
@@ -50,15 +51,15 @@ class URLManipulator:
 class RequestMutator:
     """A class to modify requests by replacing body content and URLs based on a fuzz marker."""
 
-    def __init__(self, fuzz_marker="[FUZZ]"):
+    def __init__(self, fuzz_markers):
         """
         Initialize the RequestMutator object.
 
         Parameters:
-        - fuzz_marker (str): Marker used to identify content to be replaced.
+        - fuzz_markers (list): Marker used to identify content to be replaced.
         """
-        self._fuzz_marker = fuzz_marker
-        self._url_manipulator = URLManipulator(self._fuzz_marker)
+        self._fuzz_markers = fuzz_markers
+        self._url_manipulator = URLManipulator(self._fuzz_markers)
     
     def match(self, request):
         """
@@ -70,7 +71,7 @@ class RequestMutator:
         Returns:
         - bool: True if the request matches the fuzz marker, False otherwise.
         """
-        if request.text and self._fuzz_marker in request.text:
+        if request.text and any(marker in request.text for marker in self._fuzz_markers):
             return True
         elif self._match_query_param(request.queryString):
             return True
@@ -87,8 +88,9 @@ class RequestMutator:
         - str: The modified body content.
         """
         if request.text:
-            if self._fuzz_marker in request.text:
-                return request.text.replace(self._fuzz_marker, replacement_text)
+            for marker in self._fuzz_markers:
+                if marker in request.text:
+                    return request.text.replace(marker, replacement_text)
             else:
                 return request.text
         return ""
@@ -110,7 +112,7 @@ class RequestMutator:
         for kv in queryStrings:
             for k, v in kv.items():
                 if k == "value":
-                    if self._fuzz_marker in v:
+                    if any(marker in v for marker in self._fuzz_markers):
                         return True
         return False
 
@@ -179,7 +181,6 @@ class RemoteModel:
         - tuple: A tuple containing the response content and possible model output, is parsing is successful otherwise empty.
         """
         prompt = self._create_prompt(input_text)
-        print(prompt)
         res = self._generate_raw(prompt)
         return self._response_parser.parse(res)
 
@@ -300,17 +301,17 @@ class RemoteModel:
 class Har2RemoteModel:
     """A class to convert HAR files to RemoteModel instances."""
 
-    def __init__(self, har_file_path, fuzz_marker="[FUZZ]", prompt_prefix=""):
+    def __init__(self, har_file_path, fuzz_markers, prompt_prefix=""):
         """
         Initialize the Har2RemoteModel object.
 
         Parameters:
         - har_file_path (str): The path to the HAR file.
-        - fuzz_marker (str): Marker used to identify parameters to be replaced.
+        - fuzz_markers (list): Marker used to identify parameters to be replaced.
         """
         with open(har_file_path, 'r') as f:
             self._har_parser = HarParser(json.loads(f.read())) 
-        self._fuzz_marker = fuzz_marker
+        self._fuzz_markers = fuzz_markers
         self._prompt_prefix = prompt_prefix
 
     def convert(self):
@@ -320,7 +321,7 @@ class Har2RemoteModel:
         Yields:
         - RemoteModel: The converted RemoteModel instances.
         """
-        matcher = RequestMutator(self._fuzz_marker)
+        matcher = RequestMutator(self._fuzz_markers)
         for page in self._har_parser.pages:
             for har_entry in page.entries:
                 if matcher.match(har_entry.request):

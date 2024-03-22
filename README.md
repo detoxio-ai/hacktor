@@ -23,9 +23,43 @@ git clone https://github.com/safedep/conocer.git
 cd conocer 
 poetry install
 ```
+In order to assist crawling GenAI webapp features testing, setup playright
+
+```bash
+playwright install
+
+```
+** Various browsers should be installed including chromium. Ignore error at the end **
+
 
 
 ## Usage
+
+### As GenAI App Scanner
+
+It works as follows: 
+
+[1] python conocer/main.py webapps <<GenAI APP URL>>
+
+[2] Browser window will open, type [FUZZ] or [CONOCER] in a text area to be used for testing
+
+[3] Once recording is done, close the browser
+
+[4] Tool will start fuzzing requests with prompts
+
+[5] Report will be generated or printed on console
+
+** Basic Command**
+
+```bash
+poetry run conocer webapps <URL>
+```
+
+
+
+
+
+### As Library
 
 ```python
 # Example usage code for DetoxioModelDynamicScanner
