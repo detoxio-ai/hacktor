@@ -47,3 +47,6 @@ env_list = [
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+conocer = "conocer.main:main"

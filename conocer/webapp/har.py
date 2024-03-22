@@ -179,6 +179,7 @@ class RemoteModel:
         - tuple: A tuple containing the response content and possible model output, is parsing is successful otherwise empty.
         """
         prompt = self._create_prompt(input_text)
+        print(prompt)
         res = self._generate_raw(prompt)
         return self._response_parser.parse(res)
 
@@ -214,11 +215,12 @@ class RemoteModel:
         - response: The response from the remote model.
         """
         _headers = dict(
-            (d['name'], d['value']) for d in self._request.headers)
+            (d['name'], d['value']) for d in self._request.headers if not d['name'].startswith(':'))
 
         _cookies = dict(
-            (d['name'], d['value']) for d in self._request.cookies)
-        
+            (d['name'], d['value']) for d in self._request.cookies if not d['name'].startswith(':'))
+
+
         data = self._mutator.replace_body(self._request, input_text)
         url = self._mutator.replace_url(self._request, input_text)
         res = method(url=url, headers=_headers, cookies=_cookies, data=data)
@@ -291,7 +293,6 @@ class RemoteModel:
         - str or None: The location of the marker within the response, or None if not found.
         """
         for k, v in res_json.items():
-            print(k, v, marker)
             if v != prompt and marker in v:
                 return k
         return None 
@@ -299,7 +300,7 @@ class RemoteModel:
 class Har2RemoteModel:
     """A class to convert HAR files to RemoteModel instances."""
 
-    def __init__(self, har_file_path, fuzz_marker="[FUZZ]"):
+    def __init__(self, har_file_path, fuzz_marker="[FUZZ]", prompt_prefix=""):
         """
         Initialize the Har2RemoteModel object.
 
@@ -310,6 +311,7 @@ class Har2RemoteModel:
         with open(har_file_path, 'r') as f:
             self._har_parser = HarParser(json.loads(f.read())) 
         self._fuzz_marker = fuzz_marker
+        self._prompt_prefix = prompt_prefix
 
     def convert(self):
         """
@@ -322,7 +324,8 @@ class Har2RemoteModel:
         for page in self._har_parser.pages:
             for har_entry in page.entries:
                 if matcher.match(har_entry.request):
-                    yield(RemoteModel(har_entry.request, matcher))
+                    model = RemoteModel(request=har_entry.request, mutator=matcher, prompt_prefix=self._prompt_prefix)
+                    yield(model)
 
 if __name__ == "__main__":
     har_file_path = '/tmp/har_file_pathkvrbrn9e.har'
