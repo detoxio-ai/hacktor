@@ -1,22 +1,25 @@
+import os
 import argparse
 import logging
 import json
 from chakra.webapp.scanner import GenAIWebScanner, CrawlerOptions, ScannerOptions, FUZZING_MARKERS
 
-def save_json_report(out_path, report):
-    if out_path:
-        with open(out_path+".", "w") as out:
-            json.dump(report.as_dict(), out)
-
-def save_markdown_report(out_path, report):
-    if out_path:
-        with open(out_path+".", "w") as out:
-            json.dump(report.markdown(), out)
-
 def setup_logging(args):
-    log_level = getattr(args, 'log_level', 'WARN')
+    log_level = getattr(args, 'log_level', 'INFO').upper()
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
+
+def check_prerequisites(args):
+    if not os.getenv("DETOXIO_API_KEY") and not args.skip_testing:
+        logging.warn("""DETOXIO_API_KEY is missing. Set it as Env variable as follows:
+            export DETOXIO_API_KEY=****
+            
+            Check Detoxio API docs for more details: https://docs.detoxio.ai/api/authentication
+        """)
+        return False
+    
+    return True
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -53,9 +56,8 @@ Human Assisted Testing of GenAI Apps and Models:
     webapps_parser.add_argument("--json", type=str, help="Path to store the report of scanning in json format")
     webapps_parser.add_argument("--markdown", type=str, help="Path to store the report of scanning in markdown format ")
     webapps_parser.add_argument("-n", "--no_of_tests", type=int, default=10, help="No of Tests to run. Default 10")
-    webapps_parser.add_argument("-l", "--log_level", type=str, default="WARN", help="Path to session file for storing crawl results")
+    webapps_parser.add_argument("-l", "--log_level", type=str, default="INFO", help="Log Levels - DEBUG, INFO, WARN, ERROR. Default: INFO")
     webapps_parser.add_argument("--marker", type=str, default="", help=f"FUZZ marker. By Default, the tool will detect any of these markers: {' '.join(FUZZING_MARKERS)}")
-
 
 
     # Subparser for scanning models
@@ -65,6 +67,8 @@ Human Assisted Testing of GenAI Apps and Models:
     args = parser.parse_args()
 
     setup_logging(args)
+    # Check if the program should run
+    check_prerequisites(args)
 
     report = None
     if args.subcommand == 'webapps':
@@ -97,8 +101,7 @@ Human Assisted Testing of GenAI Apps and Models:
     if report:
         if args.json or args.markdown:
             print("Output will be saved to json or markdown file: ")
-            save_json_report(args.json, report)
-            save_markdown_report(args.markdown, report)
+            report.save_report(args.json, args.markdown)
         else:
             print(report.as_markdown())
 

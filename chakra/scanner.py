@@ -2,6 +2,7 @@ import os
 import logging
 import grpc
 import copy
+import json
 
 from transformers import AutoTokenizer
 import transformers 
@@ -140,6 +141,20 @@ class InMemoryScannerResults:
     def as_dict(self):
         dict_results = list(map(lambda x: x.as_dict(), self._results))
         return dict_results
+
+    def _save_json_report(self, out_path):
+        if out_path:
+            with open(out_path, "w") as out:
+                json.dump(self.as_dict(), out)
+
+    def _save_markdown_report(self, out_path):
+        if out_path:
+            with open(out_path, "w") as out:
+                json.dump(self.markdown(), out)
+
+    def save_report(self, json_path="", markdown_path=""):
+        self._save_json_report(json_path)
+        self._save_markdown_report(markdown_path)
 
 
 class DetoxioModelDynamicScannerSession:
