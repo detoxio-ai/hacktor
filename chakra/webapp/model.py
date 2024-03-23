@@ -5,12 +5,12 @@ import string
 import random
 from gradio_client import Client
 
-class RemoteModel:
+class WebappRemoteModel:
     """A class representing a remote model for generating responses."""
 
     def __init__(self, request, mutator, output_field="", prompt_prefix=""):
         """
-        Initialize the RemoteModel object.
+        Initialize the WebappRemoteModel object.
 
         Parameters:
         - request: The request object representing the remote model.

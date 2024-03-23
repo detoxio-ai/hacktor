@@ -6,7 +6,7 @@ import string
 import logging
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from haralyzer import HarParser, HarPage
-from .model import RemoteModel
+from .model import WebappRemoteModel
 
 class URLManipulator:
     """A class to manipulate URLs by replacing query parameters containing a specific marker."""
@@ -117,12 +117,12 @@ class RequestMutator:
                         return True
         return False
 
-class Har2RemoteModel:
-    """A class to convert HAR files to RemoteModel instances."""
+class Har2WebappRemoteModel:
+    """A class to convert HAR files to WebappRemoteModel instances."""
 
     def __init__(self, har_file_path, fuzz_markers, prompt_prefix=""):
         """
-        Initialize the Har2RemoteModel object.
+        Initialize the Har2WebappRemoteModel object.
 
         Parameters:
         - har_file_path (str): The path to the HAR file.
@@ -135,21 +135,21 @@ class Har2RemoteModel:
 
     def convert(self):
         """
-        Convert HAR entries to RemoteModel instances.
+        Convert HAR entries to WebappRemoteModel instances.
 
         Yields:
-        - RemoteModel: The converted RemoteModel instances.
+        - WebappRemoteModel: The converted WebappRemoteModel instances.
         """
         matcher = RequestMutator(self._fuzz_markers)
         for page in self._har_parser.pages:
             for har_entry in page.entries:
                 if matcher.match(har_entry.request):
-                    model = RemoteModel(request=har_entry.request, mutator=matcher, prompt_prefix=self._prompt_prefix)
+                    model = WebappRemoteModel(request=har_entry.request, mutator=matcher, prompt_prefix=self._prompt_prefix)
                     yield(model)
 
 if __name__ == "__main__":
     har_file_path = '/tmp/har_file_pathkvrbrn9e.har'
-    conv = Har2RemoteModel(har_file_path)
+    conv = Har2WebappRemoteModel(har_file_path)
     for model in conv.convert():
         for prompt in ["Hello, How are you?", "Give me tips on onion crops"]:
             model.prechecks()

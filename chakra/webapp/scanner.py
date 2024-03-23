@@ -2,7 +2,7 @@ import tempfile
 import json
 from tqdm import tqdm
 import logging
-from chakra.webapp.har import Har2RemoteModel
+from chakra.webapp.har import Har2WebappRemoteModel
 from chakra.webapp.crawler import HumanAssistedWebCrawler
 from chakra.scanner import DetoxioModelDynamicScanner
 from .model import GradioAppModel
@@ -100,7 +100,7 @@ class GenAIWebScanner:
             return None
 
         logging.debug("Tests will start soon. Using Recorded Session to perform testing..")
-        conv = Har2RemoteModel(session_file_path, 
+        conv = Har2WebappRemoteModel(session_file_path, 
                                prompt_prefix=self.options.prompt_prefix, 
                                fuzz_markers=self.options.fuzz_markers)
         i = 0
