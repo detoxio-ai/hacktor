@@ -1,3 +1,4 @@
+import json
 import logging
 import requests
 import requests
@@ -22,7 +23,6 @@ class WebappRemoteModel:
         self._mutator = mutator
         self._output_field = output_field
         self._prompt_prefix = prompt_prefix
-        self._marker = self._random_string(12)
         self._response_parser = ModelResponseParser()
 
     def generate(self, input_text):
@@ -35,8 +35,7 @@ class WebappRemoteModel:
         Returns:
         - tuple: A tuple containing the response content and possible model output, is parsing is successful otherwise empty.
         """
-        prompt = self._create_prompt(input_text)
-        res = self._generate_raw(prompt)
+        res = self._generate_raw(input_text)
         return self._response_parser.parse(res)
 
     def _generate_raw(self, input_text):
@@ -49,11 +48,12 @@ class WebappRemoteModel:
         Returns:
         - response: The raw response from the remote model.
         """
+        prompt = self._create_prompt(input_text)
         if self._request.method in ["POST", "PUT"]:
-            res = self._method(requests.post, input_text)
+            res = self._method(requests.post, prompt)
             return res
         elif self._method in ["GET"]:
-            res = self._method(requests.get, input_text)
+            res = self._method(requests.get, prompt)
             return res
         else:
             logging.debug("Method not supported %s", self._method)
@@ -81,15 +81,6 @@ class WebappRemoteModel:
         url = self._mutator.replace_url(self._request, input_text)
         res = method(url=url, headers=_headers, cookies=_cookies, data=data)
         return res
-    
-    def _random_string(self, length):
-        # Define the characters to choose from
-        characters = string.ascii_letters + string.digits
-
-        # Generate a random string of specified length
-        random_string = ''.join(random.choice(characters) for _ in range(length))
-
-        return random_string
 
     def _create_prompt(self, text):
         """
@@ -105,60 +96,20 @@ class WebappRemoteModel:
 
     def prechecks(self):
         """
-        Perform prechecks to determine the location of the marker in the response.
+            Perform prechecks to determine the location of the marker in the response.
         """
-        # Send some prompts to check if response has marker
-        texts = [f"Do you know about {self._marker}? Can you tell something it?", 
-                f"Hello, {self._marker}? How are you?"]
-        for text in texts:
-            prompt = self._create_prompt(text)
-            res = self._generate_raw(prompt)
-            res_json = self._attempt_json(res)
-            if res_json:
-                loc = self._locate_marker_in_json(res_json, prompt, self._marker)
-                if loc:
-                    self._response_parser = ModelResponseParser("json", loc)
-                    break
+        mrpb = ModelResponseParserBuilder()
+        self._response_parser = mrpb.generate(self)
     
-    def _attempt_json(self, res):
-        """
-        Attempt to parse the response as JSON.
-
-        Parameters:
-        - res: The response object to parse.
-
-        Returns:
-        - dict or None: The parsed JSON response, or None if parsing fails.
-        """
-        try:
-            return res.json()  
-        except:
-            pass
-        return None
-
-    def _locate_marker_in_json(self, res_json, prompt, marker):
-        """
-        Locate the marker within the JSON response.
-
-        Parameters:
-        - res_json (dict): The parsed JSON response.
-        - prompt (str): The prompt used to generate the response.
-        - marker (str): The marker to locate within the response.
-
-        Returns:
-        - str or None: The location of the marker within the response, or None if not found.
-        """
-        for k, v in res_json.items():
-            if v != prompt and marker in v:
-                return k
-        return None 
 
 class GradioAppModel:
-    def __init__(self, url, signature, fuzz_markers):
+    def __init__(self, url, signature, fuzz_markers, prompt_prefix=""):
         self._url = url
         self._client = Client(url)
         self._signature = signature
         self._fuzz_markers = fuzz_markers
+        self._prompt_prefix = prompt_prefix
+        self._response_parser = ModelResponseParser()
 
     @classmethod
     def is_gradio_endpoint(self, url):
@@ -167,15 +118,40 @@ class GradioAppModel:
             _client = Client(url)
             return True
         except Exception as ex:
-            logging.debug("Received while connecting to client", ex)
+            logging.debug("Received while connecting to client %s", ex)
             return False
     
     def generate(self, prompt):
-        args = self._create_predict_arguements(prompt)
-        logging.debug("Arguements to Gradio App %s", args)
-        out = self._client.predict(*args)
-        return out, ""
+        res =  self._generate_raw(prompt)
+        return self._response_parser.parse(res)
     
+    def prechecks(self):
+        """
+        Perform prechecks to determine the location of the marker in the response.
+        """
+        mrpb = ModelResponseParserBuilder()
+        self._response_parser = mrpb.generate(self)
+
+    def _generate_raw(self, orig_prompt):
+        prompt = self._create_prompt(orig_prompt)
+        args = self._create_predict_arguements(prompt)
+        logging.warn("Calling Gradio App with params: %s", args)
+        out = self._client.predict(*args)
+        logging.warn("Output from Gradio App: %s", out)
+        return out
+
+    def _create_prompt(self, text):
+        """
+        Create a prompt by adding prefix to the given text.
+
+        Parameters:
+        - text (str): The input text to create the prompt.
+
+        Returns:
+        - str: The generated prompt.
+        """
+        return self._prompt_prefix + text
+
     def _create_predict_arguements(self, prompt):
         signature = self._signature
         if not signature:
@@ -217,9 +193,171 @@ class ModelResponseParser:
         if self._content_type == "text":
             return response.content, ""
         elif self._content_type == "json":
-            try:
-                res_json = response.json()
-                return response.content, res_json[self._location]
-            except Exception as ex:
-                logging.exception("Error while parsing json", ex)
-                return response.content, ""
+            return response.content, self._attempt_json_parsing(response)
+        elif self._content_type == "jsonl":
+            return response.content, self._attempt_jsonl_parsing(response)
+        else:
+            return response.content, ""
+
+    def _attempt_json_parsing(self, response):
+        try:
+            res_json = response.json()
+            return res_json[self._location]
+        except Exception as ex:
+            logging.exception("Error while parsing json", ex)
+        
+        return ""
+
+
+    def _attempt_jsonl_parsing(self, res):
+        """
+        Attempt to parse the response as JSON.
+
+        Parameters:
+        - res: The response object to parse.
+
+        Returns:
+        - dict or None: The parsed JSON response, or None if parsing fails.
+        """
+        try:
+            decoded_content = res.content.decode("utf-8")
+            lines = decoded_content.split("\n")
+            for line in lines:
+                parsed_line = json.loads(line)
+                txt = parsed_line.get(self._location)
+                if txt:
+                    return txt
+        except Exception as ex:
+            pass
+            logging.exception(ex)
+        return ""
+
+
+class ModelResponseParserBuilder:
+
+    def __init__(self):
+        pass
+    
+    def generate(self, _model):
+        """
+         Generate ModelResponseParser to parse model output and locate the answer
+        """
+        _marker = self._random_string(12)
+        _response_parser = ModelResponseParser()
+
+        # Send some prompts to check if response has marker
+        texts = [f"Do you know about {_marker}? Can you tell something it?", 
+                f"Hello, {_marker}? How are you?"]
+        for prompt in texts:
+            # print("Sending prompt..", prompt)
+            res = _model._generate_raw(prompt)
+            # print("Response ", res)
+            _response_parser = self._attempt_convert_res_2_parser(prompt, res, _marker)
+            if _response_parser:
+                break
+
+        return _response_parser
+
+    def _attempt_convert_res_2_parser(self, prompt, res, _marker):
+        # Try json
+        methods = [
+            self._attempt_convert_json_to_parser,
+            self._attempt_convert_jsonl_to_parser
+        ]
+        for method in methods:
+            parser = method(prompt, res, _marker)
+            if parser:
+                return parser
+        # Return default 
+        return ModelResponseParser()
+                  
+    def _attempt_convert_json_to_parser(self, prompt, res, _marker):
+        res_json = self._attempt_json_parsing(res)
+        if res_json:
+            # print("Could parse json structure..", res_json)
+            loc = self._locate_marker_in_json(res_json, prompt, _marker)
+            if loc:
+                _response_parser = ModelResponseParser("json", loc)
+                logging.debug("Detected Reponse Structure: %s %s", "json", loc)
+                return _response_parser
+        logging.debug("Reponse Json Parsing failed: %s", "json")
+        return None
+
+    def _attempt_convert_jsonl_to_parser(self, prompt, res, _marker):
+        json_lines = self._attempt_jsonl_parsing(res)
+        for json_line in json_lines:
+            loc = self._locate_marker_in_json(json_line, prompt, _marker)
+            if loc:
+                _response_parser = ModelResponseParser("jsonl", loc)
+                logging.debug("Detected Reponse Structure: %s %s", "jsonl", loc)
+                return _response_parser
+        logging.debug("Reponse Jsonl Parsing failed: %s", "jsonl")
+        return None
+
+    def _random_string(self, length):
+        # Define the characters to choose from
+        characters = string.ascii_letters + string.digits
+
+        # Generate a random string of specified length
+        random_string = ''.join(random.choice(characters) for _ in range(length))
+
+        return random_string
+    
+    def _attempt_json_parsing(self, res):
+        """
+        Attempt to parse the response as JSON.
+
+        Parameters:
+        - res: The response object to parse.
+
+        Returns:
+        - dict or None: The parsed JSON response, or None if parsing fails.
+        """
+        try:
+            return res.json()  
+        except Exception as ex:
+            logging.debug("Could not parse json structure %s", ex)
+            # print(ex)
+            # print("Cound not parse json of response ", res.content)
+            pass
+        return None
+
+    def _attempt_jsonl_parsing(self, res):
+        """
+        Attempt to parse the response as JSON.
+
+        Parameters:
+        - res: The response object to parse.
+
+        Returns:
+        - dict or None: The parsed JSON response, or None if parsing fails.
+        """
+        try:
+            # print(res.content)
+            decoded_content = res.content.decode("utf-8")
+            # print(decoded_content)
+            lines = decoded_content.split("\n")
+            for line in lines:
+                # print(line)
+                parsed_line = json.loads(line)
+                yield(parsed_line)
+        except Exception as ex:
+            logging.debug("Could not parse jsonl structure %s", ex)
+            pass
+
+    def _locate_marker_in_json(self, res_json, prompt, marker):
+        """
+        Locate the marker within the JSON response.
+
+        Parameters:
+        - res_json (dict): The parsed JSON response.
+        - prompt (str): The prompt used to generate the response.
+        - marker (str): The marker to locate within the response.
+
+        Returns:
+        - str or None: The location of the marker within the response, or None if not found.
+        """
+        for k, v in res_json.items():
+            if v != prompt and marker in v:
+                return k
+        return None 

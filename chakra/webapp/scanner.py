@@ -45,9 +45,33 @@ class GenAIWebScanner:
             return self._scan_webapp(url)
     
     def _scan_gradio_app(self, url):
+        # Create model
         predict_signature = self._detect_gradio_predict_api_signature(url)
         model = GradioAppModel(url, predict_signature, self.options.fuzz_markers)
+        # Train model to learn reponse structure and how to extract answer
+        self.logger.debug("Learning model response structure")
+        model.prechecks()
         return self.__scan_model(model)
+
+    def _scan_webapp(self, url):
+        session_file_path = self._crawl(url)
+
+        if self.options.skip_testing:
+            return None
+
+        logging.debug("Tests will start soon. Using Recorded Session to perform testing..")
+        conv = Har2WebappRemoteModel(session_file_path, 
+                               prompt_prefix=self.options.prompt_prefix, 
+                               fuzz_markers=self.options.fuzz_markers)
+        i = 0
+        for model in conv.convert():
+            i += 1
+            print("Doing Prechecks..")
+            model.prechecks()
+            return self.__scan_model(model)
+        if i == 0:
+            logging.warn("No requests found in session with Fuzzing Marker %s. Skipping testing..", )
+
 
     def _detect_gradio_predict_api_signature(self, url):
         """
@@ -92,25 +116,6 @@ class GenAIWebScanner:
                                                 browser_name=self.options.crawler_options.browser_name)
             crawler.crawl(url, session_file_path=session_file_path, handle_request_fn=intercept_request_hook)
         return session_file_path
-
-    def _scan_webapp(self, url):
-        session_file_path = self._crawl(url)
-
-        if self.options.skip_testing:
-            return None
-
-        logging.debug("Tests will start soon. Using Recorded Session to perform testing..")
-        conv = Har2WebappRemoteModel(session_file_path, 
-                               prompt_prefix=self.options.prompt_prefix, 
-                               fuzz_markers=self.options.fuzz_markers)
-        i = 0
-        for model in conv.convert():
-            i += 1
-            model.prechecks()
-            return self.__scan_model(model)
-        if i == 0:
-            logging.warn("No requests found in session with Fuzzing Marker %s. Skipping testing..", )
-
 
     def __scan_model(self, model):
         # Provide your API key or set it as an environment variable

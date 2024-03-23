@@ -150,7 +150,7 @@ class InMemoryScannerResults:
     def _save_markdown_report(self, out_path):
         if out_path:
             with open(out_path, "w") as out:
-                json.dump(self.markdown(), out)
+                out.write(self.as_markdown())
 
     def save_report(self, json_path="", markdown_path=""):
         self._save_json_report(json_path)
