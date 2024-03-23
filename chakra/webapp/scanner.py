@@ -5,7 +5,7 @@ import logging
 from chakra.webapp.har import Har2RemoteModel
 from chakra.webapp.crawler import HumanAssistedWebCrawler
 from chakra.scanner import DetoxioModelDynamicScanner
-from gradio_client import Client
+from .model import GradioAppModel
 
 FUZZING_MARKERS = ["[[FUZZ]]", "[FUZZ]", "FUZZ", "<<FUZZ>>", "[[CHAKRA]]", "[CHAKRA]", "CHAKRA", "<<CHAKRA>>"]
 
@@ -33,57 +33,20 @@ class ScannerOptions:
         self.fuzz_markers = fuzz_markers or FUZZING_MARKERS
         self.skip_testing = skip_testing
 
-class GradioApp:
-    def __init__(self, url, signature, fuzz_markers):
-        self._url = url
-        self._client = Client(url)
-        self._signature = signature
-        self._fuzz_markers = fuzz_markers
-
-    @classmethod
-    def is_gradio_endpoint(self, url):
-        try:
-            logging.debug("Checking if url is a gradio endpint")
-            _client = Client(url)
-            return True
-        except Exception as ex:
-            logging.debug("Received while connecting to client", ex)
-            return False
-    
-    def generate(self, prompt):
-        args = self._create_predict_arguements(prompt)
-        logging.debug("Arguements to Gradio App %s", args)
-        out = self._client.predict(*args)
-        return out, ""
-    
-    def _create_predict_arguements(self, prompt):
-        signature = self._signature
-        if not signature:
-            signature = [self._fuzz_markers[0], "Chat"]  # Set default signature, a best guess
-        arguements = []
-        for param in signature:
-            value = param
-            for marker in self._fuzz_markers:
-                if isinstance(param, str) and marker in param:
-                    value = param.replace(marker, prompt)
-                    break
-            arguements.append(value)
-        return arguements
-
 class GenAIWebScanner:
 
     def __init__(self, options:ScannerOptions):
         self.options = options
     
     def scan(self, url):
-        if GradioApp.is_gradio_endpoint(url):
+        if GradioAppModel.is_gradio_endpoint(url):
             return self._scan_gradio_app(url)
         else:
             return self._scan_webapp(url)
     
     def _scan_gradio_app(self, url):
         predict_signature = self._detect_gradio_predict_api_signature(url)
-        model = GradioApp(url, predict_signature, self.options.fuzz_markers)
+        model = GradioAppModel(url, predict_signature, self.options.fuzz_markers)
         return self.__scan_model(model)
 
     def _detect_gradio_predict_api_signature(self, url):
@@ -136,7 +99,7 @@ class GenAIWebScanner:
         if self.options.skip_testing:
             return None
 
-        logging.warn("Skipped Human Assisted Crawling. Using Recorded Session to perform testing..")
+        logging.debug("Tests will start soon. Using Recorded Session to perform testing..")
         conv = Har2RemoteModel(session_file_path, 
                                prompt_prefix=self.options.prompt_prefix, 
                                fuzz_markers=self.options.fuzz_markers)
