@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "conocer"
+name = "chakra"
 version = "0.1.0"
 description = "LLM models Red Teaming Utility Package"
 authors = ["jchauhan <jitendra@detoxio.ai>"]
@@ -25,6 +25,8 @@ playwright = "^1.42.0"
 validators = "^0.23.2"
 haralyzer = "^2.4.0"
 #torch = "^2.2.1"
+gradio-client = "^0.13.0"
+
 
 [[tool.poetry.source]]
 name = "buf"
@@ -49,4 +51,4 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-conocer = "conocer.main:main"
+chakra = "chakra.main:main"

@@ -1,5 +1,5 @@
 import pytest
-from conocer.parser import DetoxioResponseEvaluationResult
+from chakra.parser import DetoxioResponseEvaluationResult
 
 # Sample evaluation result
 RESULT = {

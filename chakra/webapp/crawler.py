@@ -15,10 +15,10 @@ class HumanAssistedWebCrawler:
         self._browser_name = browser_name
         self._fuzz_marker = fuzz_marker
     
-    def crawl(self, url, session_file_path):
+    def crawl(self, url, session_file_path, handle_request_fn=None):
         loop = asyncio.new_event_loop()
         task = loop.create_task(
-            self.async_crawl(url, session_file_path))
+            self.async_crawl(url, session_file_path, handle_request_fn))
         loop.run_until_complete(task)
 
     def _handle_request(self, request):
@@ -28,7 +28,7 @@ class HumanAssistedWebCrawler:
             # if post_data and self._fuzz_marker in post_data:
             #     print("Found request to be fuzzed: ", f'>> {request.method} {request.url} {post_data} \n')
 
-    async def async_crawl(self, url, session_file_path):
+    async def async_crawl(self, url, session_file_path, handle_request_fn=None):
         if not validators.url(url):
             raise Exception(
                 "The url provided is malformed. Exiting Crawling procedure.")
@@ -51,8 +51,9 @@ class HumanAssistedWebCrawler:
                 context = await browser.new_context(record_har_path=session_file_path)
                 context.set_default_timeout(0)
                 page = await context.new_page()
+                handle_request_fn = handle_request_fn or self._handle_request
                 page.on(
-                    "request", lambda request: self._handle_request(request))
+                    "request", lambda request: handle_request_fn(request))
                 page.on(
                     "response", lambda response: logging.debug(
                         f'<< {response.status} {response.url} \n'))

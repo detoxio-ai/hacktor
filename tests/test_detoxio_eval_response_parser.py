@@ -1,5 +1,5 @@
 import pytest  
-from conocer.parser import DetoxioEvaluationResponseParser
+from chakra.parser import DetoxioEvaluationResponseParser
 
 
 RESULT_BIG = {

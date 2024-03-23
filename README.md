@@ -1,34 +1,34 @@
-# Conocer
+# Chakra
 
 ## Why does it exist?
 
-Conocer offers the perfect solution for:
+Chakra offers the perfect solution for:
 
 - **Web App Pentesters**: Security test GenAI Chatbots, Assistants, and Agents.
 - **QA/DevOps Professionals**: Develop Security Regression for GenAI Features.
 
-Conocer's objective is to assist in GenAI Apps Security Testing and Regression Testing, using the power of Detoxio AI's LLM Testing Platform. 
+Chakra's objective is to assist in GenAI Apps Security Testing and Regression Testing, using the power of Detoxio AI's LLM Testing Platform. 
 
 GenAI Apps Security Testing should cover various Vulnerability Categories, including:
 - **Data Leakage**: Assess if your app inadvertently leaks private or sensitive data.
 - **Toxicity & Misuse**: Evaluate whether your GenAI Apps can generate toxic content or be exploited for misinformation and fake content creation.
 - **Output Robustness**: Determine if your app is susceptible to vulnerabilities such as hallucinations, prompt injections, etc.
 
-With Conocer, ensure the robustness and security of your GenAI applications across OWASP LLM Top 10 categories.
+With Chakra, ensure the robustness and security of your GenAI applications across OWASP LLM Top 10 categories.
 
 ## Getting Started
 
-**Clone and install Conocer**
+**Clone and install Chakra**
 
 ```bash
-git clone https://github.com/safedep/conocer.git
-cd conocer 
+git clone https://github.com/safedep/chakra.git
+cd chakra 
 poetry install
 ```
 
 **Install using pip**
 ```bash
-pip install conocer@git+https://github.com/safedep/conocer@main \
+pip install chakra@git+https://github.com/safedep/chakra@main \
     detoxio-api-protocolbuffers-python detoxio_api_grpc_python  \
     --upgrade --extra-index-url https://buf.build/gen/python
 ```
@@ -43,7 +43,7 @@ playwright install
 
 Install it as a dependency using pip
 ```bash
-pip install conocer@git+https://github.com/safedep/conocer detoxio-api-protocolbuffers-python detoxio_api_grpc_python   --upgrade --extra-index-url https://buf.build/gen/python
+pip install chakra@git+https://github.com/safedep/chakra detoxio-api-protocolbuffers-python detoxio_api_grpc_python   --upgrade --extra-index-url https://buf.build/gen/python
 ```
 
 ## Usage
@@ -51,8 +51,8 @@ pip install conocer@git+https://github.com/safedep/conocer detoxio-api-protocolb
 ### As GenAI App Scanner
 
 It works as follows: 
-1. Run `python conocer/main.py webapps <>` to start crawling web applications.
-2. Open a browser window and insert `[FUZZ]` or `[CONOCER]` in relevant text areas.
+1. Run `python chakra/main.py webapps <>` to start crawling web applications.
+2. Open a browser window and insert `[FUZZ]` or `[CHAKRA]` in relevant text areas.
 3. Close the browser after recording interactions.
 4. Tool automatically fuzzes requests using recorded prompts.
 5. Generate report summarizing fuzzing results.
@@ -68,19 +68,19 @@ export DETOXIO_API_KEY=xxxx
 
 Run it
 ```bash
-poetry run conocer webapps <URL>
+poetry run chakra webapps <URL>
 ```
 
 **Record a Crawling Session**
 ```bash
-conocer webapps <URL> -s session.har --skip_testing
+chakra webapps <URL> -s session.har --skip_testing
 cat session.har | grep [FUZZ] | wc -l  
 ```
 The above command will open the browser. Specify the Fuzzing Marker [FUZZ] in a chat box. Close the browser window to save the session 
 
 **Just Test using Recorded Session**
 ```bash
-conocer webapps <URL> -s session.har --skip_crawling --markdown report.md --json report.json
+chakra webapps <URL> -s session.har --skip_crawling --markdown report.md --json report.json
 ```
 No Browser will open. Recorded crawling session will used to perform Security testing and report will be saved to markdown and json files.
 
@@ -106,7 +106,7 @@ options:
   -l LOG_LEVEL, --log_level LOG_LEVEL
                         Path to session file for storing crawl results
   --marker MARKER       FUZZ marker. By Default, the tool will detect any of these markers: [[FUZZ]] [FUZZ] FUZZ <<FUZZ>>
-                        [[CONOCER]] [CONOCER] CONOCER <<CONOCER>>
+                        [[CHAKRA]] [CHAKRA] CHAKRA <<CHAKRA>>
 ```
 
 
@@ -117,7 +117,7 @@ options:
 
 # Assuming you have already imported the necessary modules and classes
 
-from conocer.scanner import DetoxioModelDynamicScanner
+from chakra.scanner import DetoxioModelDynamicScanner
 
 def example_usage():
     # Provide your API key or set it as an environment variable
@@ -178,6 +178,30 @@ Follow features are used from Detoxio SDK and APIs [Read API Docs](https://docs.
 
 ### Playwrite Framework
 We are using [Playwrite](https://playwright.dev/) to record Crawled data 
+
+
+### How to start development
+
+**Clone**
+```bash
+git clone https://github.com/safedep/chakra
+```
+
+**Install Dependencies**
+```bash
+pip install poetry
+cd chakra
+poetry install
+```
+
+**Develop the code**
+
+**Run it**
+
+```bash 
+poetry run chakra
+```
+[DO NOT FORGET TO SET Detoxio AI API key]
 
 ## License
 

@@ -1,11 +1,13 @@
 import tempfile
+import json
 from tqdm import tqdm
 import logging
-from conocer.webapp.har import Har2RemoteModel
-from conocer.webapp.crawler import HumanAssistedWebCrawler
-from conocer.scanner import DetoxioModelDynamicScanner
+from chakra.webapp.har import Har2RemoteModel
+from chakra.webapp.crawler import HumanAssistedWebCrawler
+from chakra.scanner import DetoxioModelDynamicScanner
+from gradio_client import Client
 
-FUZZING_MARKERS = ["[[FUZZ]]", "[FUZZ]", "FUZZ", "<<FUZZ>>", "[[CONOCER]]", "[CONOCER]", "CONOCER", "<<CONOCER>>"]
+FUZZING_MARKERS = ["[[FUZZ]]", "[FUZZ]", "FUZZ", "<<FUZZ>>", "[[CHAKRA]]", "[CHAKRA]", "CHAKRA", "<<CHAKRA>>"]
 
 class CrawlerOptions:
     def __init__(self, speed=350, browser_name="Chromium", headless=False):
@@ -31,12 +33,86 @@ class ScannerOptions:
         self.fuzz_markers = fuzz_markers or FUZZING_MARKERS
         self.skip_testing = skip_testing
 
+class GradioApp:
+    def __init__(self, url, signature, fuzz_markers):
+        self._url = url
+        self._client = Client(url)
+        self._signature = signature
+        self._fuzz_markers = fuzz_markers
+
+    @classmethod
+    def is_gradio_endpoint(self, url):
+        try:
+            logging.debug("Checking if url is a gradio endpint")
+            _client = Client(url)
+            return True
+        except Exception as ex:
+            logging.debug("Received while connecting to client", ex)
+            return False
+    
+    def generate(self, prompt):
+        args = self._create_predict_arguements(prompt)
+        logging.debug("Arguements to Gradio App %s", args)
+        out = self._client.predict(*args)
+        return out, ""
+    
+    def _create_predict_arguements(self, prompt):
+        signature = self._signature
+        if not signature:
+            signature = [self._fuzz_markers[0], "Chat"]  # Set default signature, a best guess
+        arguements = []
+        for param in signature:
+            value = param
+            for marker in self._fuzz_markers:
+                if isinstance(param, str) and marker in param:
+                    value = param.replace(marker, prompt)
+                    break
+            arguements.append(value)
+        return arguements
+
 class GenAIWebScanner:
 
     def __init__(self, options:ScannerOptions):
         self.options = options
     
     def scan(self, url):
+        if GradioApp.is_gradio_endpoint(url):
+            return self._scan_gradio_app(url)
+        else:
+            return self._scan_webapp(url)
+    
+    def _scan_gradio_app(self, url):
+        predict_signature = self._detect_gradio_predict_api_signature(url)
+        model = GradioApp(url, predict_signature, self.options.fuzz_markers)
+        return self.__scan_model(model)
+
+    def _detect_gradio_predict_api_signature(self, url):
+        """
+            Predict signature of remote gradio endpoint
+        """
+        predict_signature = {}
+        def _handle_request(request):
+            logging.debug(f'>> {request.method} {request.url} \n')  
+            if request.method in ["POST", "PUT"]:
+                post_data = request.post_data
+                if post_data and any(marker in post_data for marker in self.options.fuzz_markers):
+                    try:
+                        logging.debug("Found request to be fuzzed: %s", 
+                                      f'>> {request.method} {request.url} {post_data} \n')
+                        post_data_json = json.loads(post_data)
+                        predict_signature['sig'] = post_data_json.get("data")
+                    except Exception as ex:
+                        logging.exception("Found an error while detecting gradio predict signature", ex)
+        self._crawl(url, _handle_request)
+        logging.debug("Identified Gradio Signature", predict_signature)
+        if len(predict_signature) <= 0:
+            logging.warn("[WARNING] Could not detect gradio predict signature. Did you specify [FUZZ] marker?")
+        return predict_signature.get('sig')
+
+    def _crawl(self, url, intercept_request_hook=None):
+        """
+            Crawl and return the session file path
+        """
         session_file_path = self.options.session_file_path
         if not self.options.skip_crawling:
             if not session_file_path:
@@ -51,7 +127,11 @@ class GenAIWebScanner:
             crawler = HumanAssistedWebCrawler(headless=self.options.crawler_options.headless, 
                                                 speed=self.options.crawler_options.speed, 
                                                 browser_name=self.options.crawler_options.browser_name)
-            crawler.crawl(url, session_file_path=session_file_path)
+            crawler.crawl(url, session_file_path=session_file_path, handle_request_fn=intercept_request_hook)
+        return session_file_path
+
+    def _scan_webapp(self, url):
+        session_file_path = self._crawl(url)
 
         if self.options.skip_testing:
             return None
@@ -64,12 +144,12 @@ class GenAIWebScanner:
         for model in conv.convert():
             i += 1
             model.prechecks()
-            return self.__scan(model)
+            return self.__scan_model(model)
         if i == 0:
             logging.warn("No requests found in session with Fuzzing Marker %s. Skipping testing..", )
 
 
-    def __scan(self, model):
+    def __scan_model(self, model):
         # Provide your API key or set it as an environment variable
         api_key = ''
 
@@ -80,7 +160,6 @@ class GenAIWebScanner:
             prompt_generator = session.generate(count=self.options.no_of_tests)
             try:
                 for prompt in tqdm(prompt_generator, desc="Testing..."):
-        #             print(f"Generated Prompt: {prompt}")
                     logging.debug("Generated Prompt: \n%s", prompt.data.content)
                     # Simulate model output
                     raw_output, parsed_output = model.generate(prompt.data.content)
@@ -88,10 +167,10 @@ class GenAIWebScanner:
 
                     logging.debug("Model Executed: \n%s", model_output_text)
 
-    #                 print("Model Output", model_output_text)
                     # Evaluate the model interaction
                     if len(model_output_text) > 2: # Make sure the output is not empty
                         evaluation_response = session.evaluate(prompt, model_output_text)
+                        logging.debug("Eveluation Reponse \n%s", evaluation_response)
                     logging.debug("Evaluation Executed...")
             except Exception as ex:
                 logging.exception(ex)

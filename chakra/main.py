@@ -1,7 +1,7 @@
 import argparse
 import logging
 import json
-from conocer.webapp.scanner import GenAIWebScanner, CrawlerOptions, ScannerOptions, FUZZING_MARKERS
+from chakra.webapp.scanner import GenAIWebScanner, CrawlerOptions, ScannerOptions, FUZZING_MARKERS
 
 def save_json_report(out_path, report):
     if out_path:
@@ -13,14 +13,19 @@ def save_markdown_report(out_path, report):
         with open(out_path+".", "w") as out:
             json.dump(report.markdown(), out)
 
+def setup_logging(args):
+    log_level = getattr(args, 'log_level', 'WARN')
+    level = logging.getLevelName(log_level)
+    logging.basicConfig(level=level)
+
 def main():
     parser = argparse.ArgumentParser(
         description="""
 Human Assisted Testing of GenAI Apps and Models: 
 
-[1] python conocer/main.py webapps <<GenAI APP URL>>
+[1] python chakra/main.py webapps <<GenAI APP URL>>
 
-[2] Browser window will open, type [FUZZ] or [CONOCER] in a text area to be used for testing
+[2] Browser window will open, type [FUZZ] or [CHAKRA] in a text area to be used for testing
 
 [3] Once recording is done, close the browser
 
@@ -54,20 +59,19 @@ Human Assisted Testing of GenAI Apps and Models:
 
 
     # Subparser for scanning models
-    models_parser = subparsers.add_parser('models', help='Scan models')
-    models_parser.add_argument("model_path", type=str, help="Path to the model to scan.")
+    # models_parser = subparsers.add_parser('models', help='Scan models')
+    # models_parser.add_argument("model_path", type=str, help="Path to the model to scan.")
 
     args = parser.parse_args()
 
-    if args.log_level:
-        level = logging.getLevelName(args.log_level)
-        logging.basicConfig(level=level)
+    setup_logging(args)
 
     report = None
     if args.subcommand == 'webapps':
         try:
-            if not args.skip_testing and not args.skip_crawling:
-                logging.warning("Both Testing and Crawling can not be specified")
+            if args.skip_testing and args.skip_crawling:
+                logging.warning("Both Skip Testing and Crawling should not be specified. Doing Nothing")
+                return
             crawl_options = CrawlerOptions(speed=args.speed, browser_name=args.browser, headless=False)
             scan_options = ScannerOptions(session_file_path=args.session, 
                                           skip_crawling=args.skip_crawling, 

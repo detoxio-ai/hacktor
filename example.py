@@ -2,7 +2,7 @@
 
 # Assuming you have already imported the necessary modules and classes
 
-from conocer.scanner import DetoxioModelDynamicScanner
+from chakra.scanner import DetoxioModelDynamicScanner
 
 from progress.bar import Bar
 
