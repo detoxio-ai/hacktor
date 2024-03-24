@@ -190,6 +190,8 @@ class GenAIWebScanner:
             i = 0
             for line in sys.stdin.readlines():
                 #parse in a standard format
+                if not line.strip():
+                    continue
                 prompt = self._parse_stdin_prompts_2_json(line, template_prompt)
                 yield(prompt)
                 i += 1
