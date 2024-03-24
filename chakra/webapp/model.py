@@ -358,6 +358,6 @@ class ModelResponseParserBuilder:
         - str or None: The location of the marker within the response, or None if not found.
         """
         for k, v in res_json.items():
-            if v != prompt and marker in v:
+            if v != prompt and marker in str(v):
                 return k
         return None 

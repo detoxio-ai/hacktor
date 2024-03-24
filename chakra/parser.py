@@ -70,7 +70,7 @@ class DetoxioResponseEvaluationResult:
         return self.__result["status"]
     
     def is_unsafe(self):
-        return self.status().upper() == "UNSAFE"
+        return "UNSAFE" in self.status().upper()
     
     def threats(self, filter_by_status: str = None) -> Dict:
         """
