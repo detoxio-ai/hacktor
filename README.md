@@ -2,19 +2,17 @@
 
 ## Why does it exist?
 
-Chakra offers the perfect solution for:
+Chakra is a versatile tool for:
 
-- **Web App Pentesters**: Security test GenAI Chatbots, Assistants, and Agents.
+- **Web App Pentesters & Security Engineers**: Security test GenAI Chatbots, Assistants, and Agents.
 - **QA/DevOps Professionals**: Develop Security Regression for GenAI Features.
 
-Chakra's objective is to assist in GenAI Apps Security Testing and Regression Testing, using the power of Detoxio AI's LLM Testing Platform. 
-
-GenAI Apps Security Testing should cover various Vulnerability Categories, including:
+GenAI Apps Security Testing should cover various Vulnerability Categories (OWASP LLM Top 10), including:
 - **Data Leakage**: Assess if your app inadvertently leaks private or sensitive data.
 - **Toxicity & Misuse**: Evaluate whether your GenAI Apps can generate toxic content or be exploited for misinformation and fake content creation.
 - **Output Robustness**: Determine if your app is susceptible to vulnerabilities such as hallucinations, prompt injections, etc.
 
-With Chakra, ensure the robustness and security of your GenAI applications across OWASP LLM Top 10 categories.
+Refer to Features and Use Case Section for more details
 
 ## Getting Started
 
@@ -144,23 +142,36 @@ if __name__ == "__main__":
     example_usage()
 ```
 
+## Use Cases
+
+**Red Teaming GenAI Chatbots**:  Craft toxic prompts to test the resilience of your GenAI chatbots against adversarial attacks. Chakra aids in evaluating your chatbot's ability to handle unexpected or malicious inputs.
+
+**Mobile GenAI App Security Testing**:  Fortify the security of your GenAI mobile apps.  By combining Chakra with Burp, a suite of web security testing tools, you can:
+
+Decompile the mobile app to understand its inner workings.
+Record requests and responses using Burp to capture the app's interactions.
+Test the captured APIs using Chakra to identify potential vulnerabilities.
+
+**CI/CD Integration for GenAI Testing**:  Streamline GenAI security testing into your CI/CD pipeline, ensuring continuous security throughout the development lifecycle. Chakra integrates with Playwright, a popular automation framework, to:
+
+Record user sessions within the GenAI application.
+Automatically execute Chakra tests based on the recorded sessions during the CI/CD process.
+
 ## Features 
 
 ### Human Assisted Crawling
-- **Description**: This feature involves crawling web applications with the assistance of a human. Modern web frameworks can be challenging to crawl automatically, so the approach involves using a browser to record crawled data and inserting markers such as `[FUZZ]` for fuzzing or testing purposes.
-- **Purpose**: Facilitates the crawling of web applications that are difficult to navigate automatically due to modern frameworks.
-- **Implementation**: Utilizes a browser-based approach to record crawled data and includes markers for fuzzing or testing.
+
+This feature involves crawling web applications with the assistance of a human. Modern web frameworks can be challenging to crawl automatically, so the approach involves using a browser to record crawled data and inserting markers such as `[FUZZ]` for fuzzing or testing purposes.
 
 ### Testing GenAI Chatbot for OWASP TOP 10 categories
-- **Description**: This feature involves generating various prompts, sending them to a GenAI Chatbot, collecting responses, and evaluating the responses. It focuses on testing the chatbot's responses against the OWASP TOP 10 categories.
-- **Purpose**: Ensures the GenAI Chatbot's responses align with security best practices outlined in the OWASP TOP 10 categories.
-- **Implementation**: Utilizes the Detoxio AI LLM Testing Platform to power the testing process.
+
+This feature involves generating various prompts, sending them to a GenAI Chatbot, collecting responses, and evaluating the responses. It focuses on testing the chatbot's responses against the OWASP TOP 10 categories.
+
 
 ### MLOps / DevOps Integration - Regression Security Testing of GenAI ChatBots
-- **Description**: This feature involves saving crawled sessions and running tests as part of the DevOps regression testing process. It focuses on regression security testing of GenAI Chatbots.
-- **Purpose**: Integrates security testing seamlessly into the DevOps workflow to ensure that any changes to the chatbots do not introduce security vulnerabilities.
-- **Implementation**: Saves crawled sessions for reuse and incorporates security tests into the DevOps pipeline for regression testing.
-
+- **Description**:
+-
+- This feature involves saving crawled sessions and running tests as part of the DevOps regression testing process. It focuses on regression security testing of GenAI Chatbots.
 
 ## Powered by 
 
