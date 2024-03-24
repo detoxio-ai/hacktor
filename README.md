@@ -107,6 +107,19 @@ options:
                         [[CHAKRA]] [CHAKRA] CHAKRA <<CHAKRA>>
 ```
 
+### More Examples
+
+
+**Input Prompts from a file where each line is just a prompt**
+```
+cat tests/data/sample/input_prompts1.text | chakra webapps https://huggingface.co/spaces/huggingchat/chat-ui-template
+```
+
+**Input Prompts from a file with prompt, category and other details**
+```
+cat tests/data/sample/input_prompts1.json | chakra webapps https://huggingface.co/spaces/huggingchat/chat-ui-template
+```
+
 
 ### As Library
 

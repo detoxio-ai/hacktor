@@ -10,10 +10,16 @@ from chakra.webapp.har import Har2WebappRemoteModel
 from chakra.webapp.crawler import HumanAssistedWebCrawler
 from chakra.scanner import DetoxioModelDynamicScanner
 from .model import GradioAppModel
-from collections import namedtuple
 
+from google.protobuf import json_format
+import proto.dtx.services.prompts.v1.prompts_pb2 as prompts_pb2
 
 FUZZING_MARKERS = ["[[FUZZ]]", "[FUZZ]", "FUZZ", "<<FUZZ>>", "[[CHAKRA]]", "[CHAKRA]", "CHAKRA", "<<CHAKRA>>"]
+TEMPLATE_PROMPT = { "generatedAt": "2024-03-23T10:41:40.115447256Z", 
+                    "data": {"content": ""}, 
+                    "sourceLabels": {"domain": "ANY", "category": "ANY"}
+                }  
+
 
 class CrawlerOptions:
     def __init__(self, speed=350, browser_name="Chromium", headless=False):
@@ -234,12 +240,16 @@ class GenAIWebScanner:
             }
             }
         """
+        template_prompt = copy.copy(TEMPLATE_PROMPT)  
         prompt_json = Dict(raw_prompt)
-        prompt = copy.copy(template_prompt)
+        # prompt = copy.copy(template_prompt)
         if prompt_json.prompt and prompt_json.domain and prompt_json.category:
-            prompt.data.content = prompt_json.prompt
-            prompt.source_labels.domain = prompt_json.domain
-            prompt.source_labels.category = prompt_json.category
+            template_prompt["data"]["content"] = prompt_json.prompt
+            template_prompt["sourceLabels"]["domain"] = prompt_json.domain
+            template_prompt["sourceLabels"]["category"] = prompt_json.category
+            prompt = prompts_pb2.Prompt()
+            json_string = json.dumps(template_prompt)
+            json_format.Parse(json_string, prompt)
             return prompt
         else:
             return None
@@ -262,12 +272,12 @@ class GenAIWebScanner:
             }
             }
         """
-        prompt = copy.copy(template_prompt)
-        prompt.data.content = prompt_str
-        prompt.source_labels.domain = "ANY"
-        prompt.source_labels.category = "UNKNOWN"
+        template_prompt = copy.copy(TEMPLATE_PROMPT)  
+        template_prompt["data"]["content"] = prompt_str
+        prompt = prompts_pb2.Prompt()
+        json_string = json.dumps(template_prompt)
+        json_format.Parse(json_string, prompt)
         return prompt
-
 
 
 
