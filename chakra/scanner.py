@@ -4,9 +4,6 @@ import grpc
 import copy
 import json
 
-from transformers import AutoTokenizer
-import transformers 
-import torch
 from contextlib import contextmanager
 
 from .generator import DetoxioPromptGenerator
