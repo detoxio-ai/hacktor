@@ -316,9 +316,7 @@ class BurpRequest2MobileAppRemoteModel:
 if __name__ == "__main__":
     har_file_path = '/tmp/har_file_pathkvrbrn9e.har'
     res_file_path = '/tmp/KissanAI_Request.txt'
-    #res_file_path = '/tmp/5C_Network_Request.txt'
     base_url = "https://api1.kissangpt.com"
-    #base_url = "https://protocall-api.5cnetwork.com"
     conv = BurpRequest2MobileAppRemoteModel(base_url, res_file_path, prompt_param="question")
     model = conv.convert()
 

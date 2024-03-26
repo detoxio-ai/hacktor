@@ -183,8 +183,7 @@ class MobileAppRemoteModel:
 
         data = self._mutator.replace_body(self._request, input_text)
         url = self._mutator.replace_url(self._request, input_text)
-        print(data)
-        print(url)
+        print(f"DATA PASSED: {data}\n")
         if self._request._ctype == 0:
             res = method(url=url, headers=self._request._headers, json=data)
         elif self._request._ctype == 1:
@@ -385,8 +384,8 @@ class ModelResponseParserBuilder:
                   
     def _attempt_convert_json_to_parser(self, prompt, res, _marker):
         res_json = self._attempt_json_parsing(res)
+
         if res_json:
-            # print("Could parse json structure..", res_json)
             loc = self._locate_marker_in_json(res_json, prompt, _marker)
             if loc:
                 _response_parser = ModelResponseParser("json", loc)
@@ -426,7 +425,11 @@ class ModelResponseParserBuilder:
         - dict or None: The parsed JSON response, or None if parsing fails.
         """
         try:
-            return res.json()  
+            response_json = res.json()
+            if type(response_json) == dict:
+                return response_json
+            else:
+                raise ValueError("Response Type not JSON")
         except Exception as ex:
             logging.debug("Could not parse json structure %s", ex)
             # print(ex)
@@ -452,7 +455,10 @@ class ModelResponseParserBuilder:
             for line in lines:
                 # print(line)
                 parsed_line = json.loads(line)
-                yield(parsed_line)
+                if type(parsed_line) == dict:
+                    yield(parsed_line)
+                else:
+                    raise ValueError("Response Type not JSON")
         except Exception as ex:
             logging.debug("Could not parse jsonl structure %s", ex)
             pass
@@ -469,7 +475,6 @@ class ModelResponseParserBuilder:
         Returns:
         - str or None: The location of the marker within the response, or None if not found.
         """
-#        print(f"{res_json}, {prompt}, {marker}")
         for k, v in res_json.items():
             if v != prompt and marker in str(v):
                 return k
