@@ -6,6 +6,15 @@ import string
 import random
 from gradio_client import Client
 
+class RequestModel:
+    def __init__(self, method, url, headers, data, ctype):
+        self._method = method
+        self._url = url
+        self._headers = headers
+        self._data = data
+        self._ctype = ctype
+
+
 class WebappRemoteModel:
     """A class representing a remote model for generating responses."""
 
@@ -144,7 +153,7 @@ class MobileAppRemoteModel:
         - response: The raw response from the remote model.
         """
         prompt = self._create_prompt(input_text)
-        if self._request.method in ["POST", "PUT"]:
+        if self._request._method in ["POST", "PUT"]:
             res = self._method(requests.post, prompt)
             return res
         elif self._method in ["GET"]:
@@ -165,16 +174,23 @@ class MobileAppRemoteModel:
         Returns:
         - response: The response from the remote model.
         """
-        _headers = dict(
-            (d['name'], d['value']) for d in self._request.headers if not d['name'].startswith(':'))
+        #_headers = dict(
+        #    (d['name'], d['value']) for d in self._request._headers if not d['name'].startswith(':'))
 
-        _cookies = dict(
-            (d['name'], d['value']) for d in self._request.cookies if not d['name'].startswith(':'))
+        #_cookies = dict(
+        #    (d['name'], d['value']) for d in self._request.cookies if not d['name'].startswith(':'))
 
 
         data = self._mutator.replace_body(self._request, input_text)
         url = self._mutator.replace_url(self._request, input_text)
-        res = method(url=url, headers=_headers, cookies=_cookies, data=data)
+        print(data)
+        print(url)
+        if self._request._ctype == 0:
+            res = method(url=url, headers=self._request._headers, json=data)
+        elif self._request._ctype == 1:
+            res = method(url=url, headers=self._request._headers, data=data)
+        else:
+            raise ValueError("UnImplemented Content type")
         return res
 
     def _create_prompt(self, text):
@@ -453,6 +469,7 @@ class ModelResponseParserBuilder:
         Returns:
         - str or None: The location of the marker within the response, or None if not found.
         """
+#        print(f"{res_json}, {prompt}, {marker}")
         for k, v in res_json.items():
             if v != prompt and marker in str(v):
                 return k
