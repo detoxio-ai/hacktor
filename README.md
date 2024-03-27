@@ -107,19 +107,48 @@ options:
                         [[CHAKRA]] [CHAKRA] CHAKRA <<CHAKRA>>
 ```
 
-### More Examples
+### As GenAI Mobile Application Scanner
 
+It works as follows: 
+1. Use Burpsuite in tandum with Andoird emulator to intercept request made to GenAI application
+2. Save this request to a file
+3. Run `python chakra/main.py mobileapp <>` to start testing.
+4. Tool automatically fuzzes requests using recorded prompt.
+5. Generate report summarizing fuzzing results.
+6. Report can be printed to console or saved for further analysis.
 
-**Input Prompts from a file where each line is just a prompt**
-```
-cat tests/data/sample/input_prompts1.text | chakra webapps https://huggingface.co/spaces/huggingchat/chat-ui-template
+**Quick Start**
+
+Specify the Detoxio API Key as above. More information here on [API Docs](https://docs.detoxio.ai/api/authentication)
+
+```bash
+export DETOXIO_API_KEY=xxxx
 ```
 
-**Input Prompts from a file with prompt, category and other details**
-```
-cat tests/data/sample/input_prompts1.json | chakra webapps https://huggingface.co/spaces/huggingchat/chat-ui-template
+Run it
+```bash
+poetry run chakra mobileapp <URL> -r <Request file path>
 ```
 
+**Other Options**
+```
+options:
+  -h, --help            show this help message and exit
+  --prompt_parameter PROMPT_PARAMETER
+                        Parameter which holds the input prompt.
+  --prompt_prefix PROMPT_PREFIX
+                        Add a prefix to every prompt to make prompts more contextual.
+  -r REQUEST, --request REQUEST
+                        Path to input burp request file.
+  --response_param RESPONSE_PARAM
+                        Parameter which holds the GenAI response.
+  --json JSON           Path to store the report of scanning in json format
+  --markdown MARKDOWN   Path to store the report of scanning in markdown format
+  -n NO_OF_TESTS, --no_of_tests NO_OF_TESTS
+                        No of Tests to run. Default 10
+  -l LOG_LEVEL, --log_level LOG_LEVEL
+                        Log Levels - DEBUG, INFO, WARN, ERROR. Default: INFO
+```
 
 ### As Library
 
