@@ -122,7 +122,6 @@ Human Assisted Testing of GenAI Apps and Models:
                                         prompt_prefix=args.prompt_prefix,
                                         output_field=args.response_param,
                                         prompt_param=args.prompt_parameter or input_markers)
-            print(scan_options.prompt_param)
             scanner = GenAIWebScanner(scan_options)
             report = scanner.scan(args.url, scanType="mobileapp")
         except Exception as ex:
