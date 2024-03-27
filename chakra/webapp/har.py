@@ -9,6 +9,8 @@ from haralyzer import HarParser, HarPage
 from .model import WebappRemoteModel, RequestModel, MobileAppRemoteModel
 #from model import WebappRemoteModel, RequestModel, MobileAppRemoteModel
 
+FUZZING_MARKERS = ["[[FUZZ]]", "[FUZZ]", "FUZZ", "<<FUZZ>>", "[[CHAKRA]]", "[CHAKRA]", "CHAKRA", "<<CHAKRA>>"]
+
 class URLManipulator:
     """A class to manipulate URLs by replacing query parameters containing a specific marker."""
 
@@ -20,8 +22,15 @@ class URLManipulator:
         - fuzz_markers (list):String Markers used to identify parameters to be replaced.
         """
         self._fuzz_markers = fuzz_markers
+        if type(fuzz_markers) == str:
+            self.replace_function = self.replace_fuzz_str
+        else:
+            self.replace_function = self.replace_fuzz_array
     
     def replace_fuzz(self, url, new_value):
+        return self.replace_function(url, new_value)
+
+    def replace_fuzz_array(self, url, new_value):
         """
         Replace parameters containing the fuzz marker with a new value.
 
@@ -37,6 +46,35 @@ class URLManipulator:
         for key, value in query_params.items():
             if any(marker in param for param in value for marker in self._fuzz_markers):
                 query_params[key] = [new_value if any(marker in param for marker in self._fuzz_markers) else param for param in value]
+
+
+        modified_query = urlencode(query_params, doseq=True)
+        modified_url = urlunparse((
+            parsed_url.scheme,
+            parsed_url.netloc,
+            parsed_url.path,
+            parsed_url.params,
+            modified_query,
+            parsed_url.fragment
+        ))
+        return modified_url
+    
+    def replace_fuzz_str(self, url, new_value):
+        """
+        Replace value of key prompt_param with a new value.
+
+        Parameters:
+        - url (str): The URL to manipulate.
+        - new_value (str): The new value to replace the fuzz marker with.
+
+        Returns:
+        - str: The modified URL.
+        """
+        parsed_url = urlparse(url)
+        query_params = parse_qs(parsed_url.query)
+        for key, _ in query_params.items():
+            if self._fuzz_markers == key:
+                query_params[key] = new_value
 
 
         modified_query = urlencode(query_params, doseq=True)
@@ -77,6 +115,8 @@ class RequestMutator:
             return True
         elif self._match_query_param(request.queryString):
             return True
+        else:
+            return False
     
     def replace_body(self, request, replacement_text):
         """
@@ -128,10 +168,20 @@ class RequestMutatorBurp:
         Parameters:
         - prompt_param (str): Parameter which holds the input prompt.
         """
-        self._prompt_param = prompt_param
+        if prompt_param == "":
+            self._prompt_param = FUZZING_MARKERS
+            self._body_manipulator = self.replace_body_arr
+        else:
+            self._prompt_param = prompt_param
+            self._body_manipulator = self.replace_body_str
+
         self._url_manipulator = URLManipulator(self._prompt_param)
-    
+        
+
     def replace_body(self, request, replacement_text):
+        return self._body_manipulator(request, replacement_text)
+    
+    def replace_body_str(self, request, replacement_text):
         """
         Replace the body content of the request.
 
@@ -143,13 +193,33 @@ class RequestMutatorBurp:
         - dict: The modified body content.
         """
         if request._data:
-            for key, val in request._data.items():
+            for key, _ in request._data.items():
                 if self._prompt_param in key:
                     return {**request._data, key: replacement_text}
             else:
                 return request._data
         return ""
     
+    def replace_body_arr(self, request, replacement_text):
+        """
+        Replace the body content of the request.
+
+        Parameters:
+        - request (RequestModel): The RequestModel object to modify.
+        - replacement_text (str): The text to replace the prompt marker with.
+
+        Returns:
+        - dict: The modified body content.
+        """
+        newbody = request._data.copy()
+        if request._data:
+            for key, value in request._data.items():
+                if any(marker in str(value) for marker in self._prompt_param):
+                    newbody[key] = replacement_text if any(marker in value for marker in self._prompt_param) else request._data[key]
+            return newbody
+        else:        
+            return ""
+
     def replace_url(self, request, replacement_text):
         """
         Replace the URL of the request.
@@ -162,6 +232,31 @@ class RequestMutatorBurp:
         - str: The modified URL.
         """
         return self._url_manipulator.replace_fuzz(request._url, [replacement_text])
+    
+    def match(self, request):
+        """
+        Check if the request matches the fuzz marker.
+
+        Parameters:
+        - request: The request object to match.
+
+        Returns:
+        - bool: True if the request matches the fuzz marker, False otherwise.
+        """
+        if request._data and any(marker in request._data for marker in self._prompt_param):
+            return True
+        elif self._match_query_param(request._url):
+            return True
+        else:
+            return False
+    
+    def _match_query_param(self, url):
+        parsed_url = urlparse(url)
+        query_params = parse_qs(parsed_url.query)
+        for _, value in query_params.items():
+            if any(marker in param for param in value for marker in self._prompt_param):
+                return True
+        return False
 
 class Har2WebappRemoteModel:
     """A class to convert HAR files to WebappRemoteModel instances."""

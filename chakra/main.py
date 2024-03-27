@@ -116,6 +116,7 @@ Human Assisted Testing of GenAI Apps and Models:
                                         crawler_options=None, 
                                         no_of_tests=args.no_of_tests, 
                                         prompt_prefix=args.prompt_prefix,
+                                        output_field=args.response_param,
                                         prompt_param=args.prompt_parameter)
             scanner = GenAIWebScanner(scan_options)
             report = scanner.scan(args.url, scanType="mobileapp")

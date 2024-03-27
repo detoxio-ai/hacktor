@@ -34,7 +34,8 @@ class ScannerOptions:
                  save_session=True,
                  no_of_tests=10, 
                  prompt_prefix="",
-                 prompt_param="", 
+                 prompt_param="",
+                 output_field="", 
                  skip_testing=False, 
                  fuzz_markers=None):
         self.session_file_path = session_file_path
@@ -44,6 +45,7 @@ class ScannerOptions:
         self.no_of_tests = no_of_tests
         self.prompt_prefix = prompt_prefix
         self.prompt_param = prompt_param
+        self.output_field = output_field
         self.fuzz_markers = fuzz_markers or FUZZING_MARKERS
         self.skip_testing = skip_testing
 
@@ -92,7 +94,7 @@ class GenAIWebScanner:
     def _scan_mobileapp(self, url):
 
         logging.debug("Starting tests. Using Recorded Request to perform testing..")
-        conv = BurpRequest2MobileAppRemoteModel(url, self.options.session_file_path, prompt_param=self.options.prompt_param)
+        conv = BurpRequest2MobileAppRemoteModel(url, self.options.session_file_path, prompt_param=self.options.prompt_param, output_field=self.options.output_field)
         model = conv.convert()
         logging.info("Doing Prechecks..")
         model.prechecks()
@@ -158,9 +160,8 @@ class GenAIWebScanner:
                     # Simulate model output
                     raw_output, parsed_output = model.generate(prompt.data.content)
                     model_output_text = parsed_output if parsed_output else raw_output
-
+                    print(f"Response: {model_output_text}")
                     logging.debug("Model Executed: \n%s", model_output_text)
-
                     # Evaluate the model interaction
                     if len(model_output_text) > 2: # Make sure the output is not empty
                         evaluation_response = session.evaluate(prompt, model_output_text)

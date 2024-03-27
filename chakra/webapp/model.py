@@ -174,9 +174,9 @@ class MobileAppRemoteModel:
         Returns:
         - response: The response from the remote model.
         """
-
         data = self._mutator.replace_body(self._request, input_text)
         url = self._mutator.replace_url(self._request, input_text)
+        print(f"\nRequest: {data}")
         if self._request._ctype == 0:
             res = method(url=url, headers=self._request._headers, json=data)
         elif self._request._ctype == 1:
