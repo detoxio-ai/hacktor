@@ -178,7 +178,7 @@ class GenAIWebScanner:
         # Need a template prompt as reference
         if self._are_prompts_available_from_stdin():
             logging.debug("Reading Prompts from Stdin..")
-            return self.self.__attempt_read_prompts_from_stdin(self.options.no_of_tests)
+            return self.__attempt_read_prompts_from_stdin(self.options.no_of_tests)
         else:
             logging.debug("Using Detoxio AI Prompts Generation..")
             return scanner_session.generate(count=self.options.no_of_tests)
