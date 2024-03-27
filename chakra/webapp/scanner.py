@@ -176,24 +176,14 @@ class GenAIWebScanner:
             Generate Prompts from either prompts service or input from stdin
         """
         # Need a template prompt as reference
-        # TODO can we get rid of this call
-        template_prompt = list(scanner_session.generate(count=1))[0]
-        std_prompts = self.__attempt_read_prompts_from_stdin(self.options.no_of_tests, template_prompt)
-        # Force Detox prompts and not STDIn prompts
-        std_prompts = None
-        if std_prompts is None:
-            return scanner_session.generate(count=self.options.no_of_tests)
+        if self._are_prompts_available_from_stdin():
+            logging.debug("Reading Prompts from Stdin..")
+            return self.self.__attempt_read_prompts_from_stdin(self.options.no_of_tests)
         else:
-            return std_prompts
+            logging.debug("Using Detoxio AI Prompts Generation..")
+            return scanner_session.generate(count=self.options.no_of_tests)
 
-
-    def __attempt_read_prompts_from_stdin(self, no_of_tests, template_prompt):
-        """
-        Read Prompts from stdin using a pipe operator
-
-        Returns an iterator that yields lines from standard input (stdin).
-        If no data is available, returns None.
-        """
+    def _are_prompts_available_from_stdin(self):
         # List of file descriptors to monitor for input
         fds = [sys.stdin]
 
@@ -201,40 +191,45 @@ class GenAIWebScanner:
         ready_to_read, _, _ = select.select(fds, [], [], 0)
 
         # If sys.stdin is in the list of ready_to_read, there's data available
-        if sys.stdin in ready_to_read:
-            # Read the available data
-            i = 0
-            for line in sys.stdin.readlines():
-                #parse in a standard format
-                if not line.strip():
-                    continue
-                prompt = self._parse_stdin_prompts_2_json(line, template_prompt)
-                yield(prompt)
-                i += 1
-                if i >= no_of_tests:
-                    return
-        else:
-            # If no data available, return an empty iterator
-            return None
+        return sys.stdin in ready_to_read
     
-    def _parse_stdin_prompts_2_json(self, raw_prompt_str, template_prompt):
+    def __attempt_read_prompts_from_stdin(self, no_of_tests):
+        """
+        Read Prompts from stdin using a pipe operator
+
+        Returns an iterator that yields lines from standard input (stdin).
+        If no data is available, returns None.
+        """
+        # Read the available data
+        i = 0
+        for line in sys.stdin.readlines():
+            #parse in a standard format
+            if not line.strip():
+                continue
+            prompt = self._parse_stdin_prompts_2_json(line)
+            yield(prompt)
+            i += 1
+            if i >= no_of_tests:
+                return
+    
+    def _parse_stdin_prompts_2_json(self, raw_prompt_str):
         """
             Parse prompts read from stdin
         """
         try:
             raw_prompt = json.loads(raw_prompt_str)
-            prompt = self._parse_internal_dataset_prompt_format(raw_prompt, template_prompt)
+            prompt = self._parse_internal_dataset_prompt_format(raw_prompt)
             if prompt:
                 return prompt
             else:
                 logging.warn("Uknown format of input prompt json provided. Missing data.content field or prompt field in json")   
         except Exception as ex:
             logging.debug("Error while converting prompt to json %s", ex)
-            return self._parse_prompt_string_2_prompt(raw_prompt_str, template_prompt)
+            return self._parse_prompt_string_2_prompt(raw_prompt_str)
         
         raise Exception("Uknown format of input prompt json provided. Missing data.content field or prompt field in json")
 
-    def _parse_internal_dataset_prompt_format(self, raw_prompt, template_prompt):
+    def _parse_internal_dataset_prompt_format(self, raw_prompt):
         """
             Parse prompts read from stdin where input prompt has following format:
             Input Format:
