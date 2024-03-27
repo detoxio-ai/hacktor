@@ -168,8 +168,8 @@ class RequestMutatorBurp:
         Parameters:
         - prompt_param (str): Parameter which holds the input prompt.
         """
-        if prompt_param == "":
-            self._prompt_param = FUZZING_MARKERS
+        if type(prompt_param) != str:
+            self._prompt_param = prompt_param or FUZZING_MARKERS
             self._body_manipulator = self.replace_body_arr
         else:
             self._prompt_param = prompt_param

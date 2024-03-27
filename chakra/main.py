@@ -70,6 +70,7 @@ Human Assisted Testing of GenAI Apps and Models:
     webapps_parser.add_argument("--prompt_prefix", type=str, default="", help="Add a prefix to every prompt to make prompts more contextual.")
     webapps_parser.add_argument("-r", "--request", type=str, help="Path to input burp request file.")
     webapps_parser.add_argument("--response_param", type=str, help="Parameter which holds the GenAI response.")
+    webapps_parser.add_argument("--marker", type=str, default="", help=f"FUZZ marker. By Default, the tool will detect any of these markers: {' '.join(FUZZING_MARKERS)}")
     # Common Options
     webapps_parser.add_argument("--json", type=str, help="Path to store the report of scanning in json format")
     webapps_parser.add_argument("--markdown", type=str, help="Path to store the report of scanning in markdown format ")
@@ -108,6 +109,9 @@ Human Assisted Testing of GenAI Apps and Models:
         print("Scanning models...")
         # Placeholder for model scanning functionality
     elif args.subcommand == 'mobileapp':
+        input_markers = None
+        if args.marker:
+            input_markers = args.marker.split()
         try:
             scan_options = ScannerOptions(session_file_path=args.request, 
                                         skip_crawling=True, 
@@ -117,7 +121,8 @@ Human Assisted Testing of GenAI Apps and Models:
                                         no_of_tests=args.no_of_tests, 
                                         prompt_prefix=args.prompt_prefix,
                                         output_field=args.response_param,
-                                        prompt_param=args.prompt_parameter)
+                                        prompt_param=args.prompt_parameter or input_markers)
+            print(scan_options.prompt_param)
             scanner = GenAIWebScanner(scan_options)
             report = scanner.scan(args.url, scanType="mobileapp")
         except Exception as ex:

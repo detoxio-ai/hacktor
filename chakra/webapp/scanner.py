@@ -160,7 +160,6 @@ class GenAIWebScanner:
                     # Simulate model output
                     raw_output, parsed_output = model.generate(prompt.data.content)
                     model_output_text = parsed_output if parsed_output else raw_output
-                    print(f"Response: {model_output_text}")
                     logging.debug("Model Executed: \n%s", model_output_text)
                     # Evaluate the model interaction
                     if len(model_output_text) > 2: # Make sure the output is not empty
