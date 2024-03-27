@@ -115,10 +115,10 @@ class MobileAppRemoteModel:
 
     def __init__(self, request, mutator, output_field="", prompt_prefix=""):
         """
-        Initialize the WebappRemoteModel object.
+        Initialize the MobileAppRemoteModel object.
 
         Parameters:
-        - request: The request object representing the remote model.
+        - request (MobileAppRemoteModel): The RequestModel object representing the remote model.
         - mutator (RequestMutator): The mutator object to modify requests.
         - output_field (str): The field in the response to extract information from.
         - prompt_prefix (str): Prefix to add to prompts sent to the model.
@@ -174,16 +174,9 @@ class MobileAppRemoteModel:
         Returns:
         - response: The response from the remote model.
         """
-        #_headers = dict(
-        #    (d['name'], d['value']) for d in self._request._headers if not d['name'].startswith(':'))
-
-        #_cookies = dict(
-        #    (d['name'], d['value']) for d in self._request.cookies if not d['name'].startswith(':'))
-
 
         data = self._mutator.replace_body(self._request, input_text)
         url = self._mutator.replace_url(self._request, input_text)
-        print(f"DATA PASSED: {data}\n")
         if self._request._ctype == 0:
             res = method(url=url, headers=self._request._headers, json=data)
         elif self._request._ctype == 1:
@@ -345,13 +338,21 @@ class ModelResponseParser:
 
 
 class ModelResponseParserBuilder:
-
+    """
+    Generator class for ModelResponseParser creation wth correct type.
+    """
     def __init__(self):
         pass
     
     def generate(self, _model):
         """
-         Generate ModelResponseParser to parse model output and locate the answer
+         Generate ModelResponseParser to parse model output and locate the answer.
+
+         Parameters:
+         - _model: Model type to conduct pre-checks.
+
+         Returns:
+         - ModelResponseParser: ModelResponseParser with type 'json', 'jsonl' or 'text'
         """
         _marker = self._random_string(12)
         _response_parser = ModelResponseParser()

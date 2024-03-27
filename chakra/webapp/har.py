@@ -6,8 +6,8 @@ import string
 import logging
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from haralyzer import HarParser, HarPage
-#from .model import WebappRemoteModel, RequestModel, MobileAppRemoteModel
-from model import WebappRemoteModel, RequestModel, MobileAppRemoteModel
+from .model import WebappRemoteModel, RequestModel, MobileAppRemoteModel
+#from model import WebappRemoteModel, RequestModel, MobileAppRemoteModel
 
 class URLManipulator:
     """A class to manipulate URLs by replacing query parameters containing a specific marker."""
@@ -119,43 +119,28 @@ class RequestMutator:
         return False
 
 class RequestMutatorBurp:
-    """A class to modify requests by replacing body content and URLs based on a fuzz marker."""
+    """A class to modify requests by replacing body content and URLs based on a prompt parameter marker."""
 
     def __init__(self, prompt_param):
         """
-        Initialize the RequestMutator object.
+        Initialize the RequestMutatorBurp object.
 
         Parameters:
-        - fuzz_markers (list): Marker used to identify content to be replaced.
+        - prompt_param (str): Parameter which holds the input prompt.
         """
         self._prompt_param = prompt_param
         self._url_manipulator = URLManipulator(self._prompt_param)
-    
-    def match(self, request):
-        """
-        Check if the request matches the fuzz marker.
-
-        Parameters:
-        - request: The request object to match.
-
-        Returns:
-        - bool: True if the request matches the fuzz marker, False otherwise.
-        """
-        if request._data and self._prompt_param in request._data:
-            return True
-        elif self._match_query_param(request._url):
-            return True
     
     def replace_body(self, request, replacement_text):
         """
         Replace the body content of the request.
 
         Parameters:
-        - request: The request object to modify.
-        - replacement_text (str): The text to replace the fuzz marker with.
+        - request (RequestModel): The RequestModel object to modify.
+        - replacement_text (str): The text to replace the prompt marker with.
 
         Returns:
-        - str: The modified body content.
+        - dict: The modified body content.
         """
         if request._data:
             for key, val in request._data.items():
@@ -170,22 +155,13 @@ class RequestMutatorBurp:
         Replace the URL of the request.
 
         Parameters:
-        - request: The request object to modify.
-        - replacement_text (str): The text to replace the fuzz marker with.
+        - request (RequestModel): The RequestModel object to modify.
+        - replacement_text (str): The text to replace the prompt marker with.
 
         Returns:
         - str: The modified URL.
         """
         return self._url_manipulator.replace_fuzz(request._url, [replacement_text])
-
-    def _match_query_param(self, queryStrings):
-        print(queryStrings)
-        for kv in queryStrings:
-            for k, v in kv.items():
-                if k == "value":
-                    if self._fuzz_markers in v:
-                        return True
-        return False
 
 class Har2WebappRemoteModel:
     """A class to convert HAR files to WebappRemoteModel instances."""
@@ -225,26 +201,23 @@ class BurpRequestParser:
         Initialize the BurpRequestParser object.
 
         Parameters:
-        - har_file_path (str): The path to the HAR file.
-        - fuzz_markers (list): Marker used to identify parameters to be replaced.
+        - request_file_path (str): The path to the Burp Request file.
+        - base_url_path (str): Base URL of request.
         """
         self._request_file_path = request_file_path
         self._request = self.parse_request(base_url_path)
 
-    """
-    Method to Parse Request file. Check for either JSON Content Type or form-data
 
-    Parameters:
-        - filename: Filename of request file
-        - prompt_parameter: Parameter in data that represents input prompt
-
-    Returns:
-        - method: Request method POST or GET
-        - url: URL of resource to send request too
-        - headers: Headers of request in file
-        - data: Data in request in file
-    """
     def parse_request(self, base_url_path):
+        """
+        Method to Parse Request file. Check for either JSON Content Type or form-data.
+
+        Parameters:
+            - base_url_path (str): Base URL of request.
+
+        Returns:
+            - RequestModel: The parsed RequestModel instance.
+        """
         # Open File
         with open(self._request_file_path, 'r') as file:
             request_text = file.read().strip()
@@ -293,8 +266,11 @@ class BurpRequest2MobileAppRemoteModel:
         Initialize the BurpRequest2MobileAppRemoteModel object.
 
         Parameters:
-        - har_file_path (str): The path to the HAR file.
-        - fuzz_markers (list): Marker used to identify parameters to be replaced.
+        - base_url_path (str): Base URL of request.
+        - request_file_path (str): The path to the Burp request file.
+        - prompt_param (str): Parameter which holds the input prompt.
+        - prompt_prefix (str): Prefix to add to prompt.
+        - output_field (str): Output field which contains GenAI response
         """
         self._burpRequestParser = BurpRequestParser(request_file_path, base_url_path) 
         self._prompt_prefix = prompt_prefix
@@ -304,23 +280,23 @@ class BurpRequest2MobileAppRemoteModel:
 
     def convert(self):
         """
-        Convert HAR entries to WebappRemoteModel instances.
+        Convert Burp request to MobileAppRemoteModel instances.
 
-        Yields:
-        - WebappRemoteModel: The converted WebappRemoteModel instances.
+        Returns:
+        - MobileAppRemoteModel: The converted MobileAppRemoteModel instance.
         """
-        matcher = RequestMutatorBurp(self._prompt_param)
-        model = MobileAppRemoteModel(request=self._burpRequestParser._request, mutator=matcher, prompt_prefix=self._prompt_prefix, output_field=self._output_field)
+        mutator = RequestMutatorBurp(self._prompt_param)
+        model = MobileAppRemoteModel(request=self._burpRequestParser._request, mutator=mutator, prompt_prefix=self._prompt_prefix, output_field=self._output_field)
         return model
 
-if __name__ == "__main__":
-    har_file_path = '/tmp/har_file_pathkvrbrn9e.har'
-    res_file_path = '/tmp/KissanAI_Request.txt'
-    base_url = "https://api1.kissangpt.com"
-    conv = BurpRequest2MobileAppRemoteModel(base_url, res_file_path, prompt_param="question")
-    model = conv.convert()
+# if __name__ == "__main__":
+#     har_file_path = '/tmp/har_file_pathkvrbrn9e.har'
+#     res_file_path = '/tmp/KissanAI_Request.txt'
+#     base_url = "https://api1.kissangpt.com"
+#     conv = BurpRequest2MobileAppRemoteModel(base_url, res_file_path, prompt_param="question")
+#     model = conv.convert()
 
-    for prompt in ["Hello, How are you?", "Give me tips on onion crops"]:
-        model.prechecks()
-        res = model.generate(prompt)
-        print(res)
+#     for prompt in ["Hello, How are you?", "Give me tips on onion crops"]:
+#         model.prechecks()
+#         res = model.generate(prompt)
+#         print(res)

@@ -10,7 +10,7 @@ def setup_logging(args):
     logging.basicConfig(level=level)
 
 def check_prerequisites(args):
-    if not os.getenv("DETOXIO_API_KEY") and not args.skip_testing:
+    if args.subcommand == "webapps" and not os.getenv("DETOXIO_API_KEY") and not args.skip_testing:
         logging.warn("""DETOXIO_API_KEY is missing. Set it as Env variable as follows:
             export DETOXIO_API_KEY=****
             
@@ -59,10 +59,22 @@ Human Assisted Testing of GenAI Apps and Models:
     webapps_parser.add_argument("-l", "--log_level", type=str, default="INFO", help="Log Levels - DEBUG, INFO, WARN, ERROR. Default: INFO")
     webapps_parser.add_argument("--marker", type=str, default="", help=f"FUZZ marker. By Default, the tool will detect any of these markers: {' '.join(FUZZING_MARKERS)}")
 
-
     # Subparser for scanning models
     # models_parser = subparsers.add_parser('models', help='Scan models')
     # models_parser.add_argument("model_path", type=str, help="Path to the model to scan.")
+
+    # Subparser for scanning Burp Resquest files - Mobile Apps
+    webapps_parser = subparsers.add_parser('mobileapp', help='Scan burp request from Mobile App.')
+    webapps_parser.add_argument("url", type=str, help="Starting URL for crawling.")
+    webapps_parser.add_argument("--prompt_parameter", type=str, default="", help="Parameter which holds the input prompt.")
+    webapps_parser.add_argument("--prompt_prefix", type=str, default="", help="Add a prefix to every prompt to make prompts more contextual.")
+    webapps_parser.add_argument("-r", "--request", type=str, help="Path to input burp request file.")
+    webapps_parser.add_argument("--response_param", type=str, help="Parameter which holds the GenAI response.")
+    # Common Options
+    webapps_parser.add_argument("--json", type=str, help="Path to store the report of scanning in json format")
+    webapps_parser.add_argument("--markdown", type=str, help="Path to store the report of scanning in markdown format ")
+    webapps_parser.add_argument("-n", "--no_of_tests", type=int, default=10, help="No of Tests to run. Default 10")
+    webapps_parser.add_argument("-l", "--log_level", type=str, default="INFO", help="Log Levels - DEBUG, INFO, WARN, ERROR. Default: INFO")
 
     args = parser.parse_args()
 
@@ -88,19 +100,34 @@ Human Assisted Testing of GenAI Apps and Models:
             report = scanner.scan(args.url)
         except Exception as ex:
             if "playwright install" in str(ex):
-                print("[Error]: It seems Playbright is not install on this system. \n Run following command and try again: \n playright install")
+                print("[Error]: It seems Playright is not install on this system. \n Run following command and try again: \n playright install")
             else:
                 raise ex
     elif args.subcommand == 'models':
         # Code to scan models
         print("Scanning models...")
         # Placeholder for model scanning functionality
+    elif args.subcommand == 'mobileapp':
+        try:
+            scan_options = ScannerOptions(session_file_path=args.request, 
+                                        skip_crawling=True, 
+                                        skip_testing=False, 
+                                        save_session=False, 
+                                        crawler_options=None, 
+                                        no_of_tests=args.no_of_tests, 
+                                        prompt_prefix=args.prompt_prefix,
+                                        prompt_param=args.prompt_parameter)
+            scanner = GenAIWebScanner(scan_options)
+            report = scanner.scan(args.url, scanType="mobileapp")
+        except Exception as ex:
+            raise ex
     else:
         parser.print_help()
     
     if report:
         if args.json or args.markdown:
-            print("Output will be saved to json or markdown file: ")
+            #print(f"Output will be saved to json file: {args.json}\n" if args.json else f"Output will be saved to markdown file: {args.markdown}\n" if args.markdown else "No output file specified.")
+            print(f"Output will be saved to json file: {args.json}" + (f" and markdown file: {args.markdown}" if args.markdown is not None else "") if args.json is not None else f"Output will be saved to markdown file: {args.markdown}" if args.markdown is not None else "No output file specified.")
             report.save_report(args.json, args.markdown)
         else:
             print(report.as_markdown())
