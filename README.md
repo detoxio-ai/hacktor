@@ -113,7 +113,9 @@ It works as follows:
 1. Use Burpsuite in tandum with Andoird emulator to intercept request made to GenAI application
 2. Save this request to a file
 3. Run `python chakra/main.py mobileapp <>` to start testing.
-4. Tool automatically fuzzes requests using recorded prompt.
+4. Tool automatically fuzzes requests using recorded prompt. In order to fuzz either:
+    * Replace the input prompt with `[FUZZ]` OR `[CHAKRA]`
+    * Provide a prompt paramtere which is the parameter in the request that maps to the input prompt
 5. Generate report summarizing fuzzing results.
 6. Report can be printed to console or saved for further analysis.
 

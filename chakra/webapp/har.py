@@ -1,12 +1,9 @@
 import json
-import copy
-import requests
-import random
-import string
-import logging
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from haralyzer import HarParser, HarPage
-from .model import WebappRemoteModel, RequestModel, MobileAppRemoteModel
+from .model import WebappRemoteModel, RequestModel
+from .burp import MobileAppRemoteModel
+
 #from model import WebappRemoteModel, RequestModel, MobileAppRemoteModel
 
 FUZZING_MARKERS = ["[[FUZZ]]", "[FUZZ]", "FUZZ", "<<FUZZ>>", "[[CHAKRA]]", "[CHAKRA]", "CHAKRA", "<<CHAKRA>>"]

@@ -1,7 +1,6 @@
 import os
 import argparse
 import logging
-import json
 from chakra.webapp.scanner import GenAIWebScanner, CrawlerOptions, ScannerOptions, FUZZING_MARKERS
 
 def setup_logging(args):
@@ -64,18 +63,18 @@ Human Assisted Testing of GenAI Apps and Models:
     # models_parser.add_argument("model_path", type=str, help="Path to the model to scan.")
 
     # Subparser for scanning Burp Resquest files - Mobile Apps
-    webapps_parser = subparsers.add_parser('mobileapp', help='Scan burp request from Mobile App.')
-    webapps_parser.add_argument("url", type=str, help="Starting URL for crawling.")
-    webapps_parser.add_argument("--prompt_parameter", type=str, default="", help="Parameter which holds the input prompt.")
-    webapps_parser.add_argument("--prompt_prefix", type=str, default="", help="Add a prefix to every prompt to make prompts more contextual.")
-    webapps_parser.add_argument("-r", "--request", type=str, help="Path to input burp request file.")
-    webapps_parser.add_argument("--response_param", type=str, help="Parameter which holds the GenAI response.")
-    webapps_parser.add_argument("--marker", type=str, default="", help=f"FUZZ marker. By Default, the tool will detect any of these markers: {' '.join(FUZZING_MARKERS)}")
+    mobileapps_parser = subparsers.add_parser('mobileapp', help='Scan burp request from Mobile App.')
+    mobileapps_parser.add_argument("url", type=str, help="Starting URL for crawling.")
+    mobileapps_parser.add_argument("--prompt_parameter", type=str, default="", help="Parameter which holds the input prompt.")
+    mobileapps_parser.add_argument("--prompt_prefix", type=str, default="", help="Add a prefix to every prompt to make prompts more contextual.")
+    mobileapps_parser.add_argument("-r", "--request", type=str, help="Path to input burp request file.")
+    mobileapps_parser.add_argument("--response_param", type=str, help="Parameter which holds the GenAI response.")
+    mobileapps_parser.add_argument("--marker", type=str, default="", help=f"FUZZ marker. By Default, the tool will detect any of these markers: {' '.join(FUZZING_MARKERS)}")
     # Common Options
-    webapps_parser.add_argument("--json", type=str, help="Path to store the report of scanning in json format")
-    webapps_parser.add_argument("--markdown", type=str, help="Path to store the report of scanning in markdown format ")
-    webapps_parser.add_argument("-n", "--no_of_tests", type=int, default=10, help="No of Tests to run. Default 10")
-    webapps_parser.add_argument("-l", "--log_level", type=str, default="INFO", help="Log Levels - DEBUG, INFO, WARN, ERROR. Default: INFO")
+    mobileapps_parser.add_argument("--json", type=str, help="Path to store the report of scanning in json format")
+    mobileapps_parser.add_argument("--markdown", type=str, help="Path to store the report of scanning in markdown format ")
+    mobileapps_parser.add_argument("-n", "--no_of_tests", type=int, default=10, help="No of Tests to run. Default 10")
+    mobileapps_parser.add_argument("-l", "--log_level", type=str, default="INFO", help="Log Levels - DEBUG, INFO, WARN, ERROR. Default: INFO")
 
     args = parser.parse_args()
 
