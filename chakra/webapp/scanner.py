@@ -254,7 +254,7 @@ class GenAIWebScanner:
             return None
 
 
-    def _parse_prompt_string_2_prompt(self, prompt_str, template_prompt):
+    def _parse_prompt_string_2_prompt(self, prompt_str):
         """
             Input Format:
                 prompt in string format

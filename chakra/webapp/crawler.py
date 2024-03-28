@@ -28,6 +28,18 @@ class HumanAssistedWebCrawler:
             # if post_data and self._fuzz_marker in post_data:
             #     print("Found request to be fuzzed: ", f'>> {request.method} {request.url} {post_data} \n')
 
+    def on_web_socket(self, ws):
+        logging.warn(f"""
+                     Unsupported ##############\nApp is using Web Sockets. 
+                     Chakra does not support Web Sockets yet!!!\n
+                     WebSocket opened on URL {ws.url}
+                     ##############""")
+        # print(f"WebSocket opened: {ws.url}")
+        # ws.on("framesent", lambda payload: print("Frame sent:", payload))
+        # ws.on("framereceived", lambda payload: print("Frame received:", payload))
+        # ws.on("close", lambda payload: print("WebSocket closed"))
+
+
     async def async_crawl(self, url, session_file_path, handle_request_fn=None):
         if not validators.url(url):
             raise Exception(
@@ -58,6 +70,7 @@ class HumanAssistedWebCrawler:
                     "response", lambda response: logging.debug(
                         f'<< {response.status} {response.url} \n'))
                 page.on("close", lambda: logging.debug("Browser Closed Successfully"))
+                page.on("websocket", self.on_web_socket)
                 await page.goto(url)
                 await page.title()
                 await page.wait_for_selector('text="None"')
