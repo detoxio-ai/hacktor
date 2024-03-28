@@ -1,10 +1,18 @@
 import json
 import logging
 import requests
-import requests
 import string
 import random
 from gradio_client import Client
+
+class RequestModel:
+    def __init__(self, method, url, headers, data, ctype):
+        self._method = method
+        self._url = url
+        self._headers = headers
+        self._data = data
+        self._ctype = ctype
+
 
 class WebappRemoteModel:
     """A class representing a remote model for generating responses."""
@@ -100,7 +108,6 @@ class WebappRemoteModel:
         """
         mrpb = ModelResponseParserBuilder()
         self._response_parser = mrpb.generate(self)
-    
 
 class GradioAppModel:
     def __init__(self, url, signature, fuzz_markers, prompt_prefix=""):
@@ -202,6 +209,7 @@ class ModelResponseParser:
     def _attempt_json_parsing(self, response):
         try:
             res_json = response.json()
+            # TODO: Implemet Auto check for location if location = None
             return res_json[self._location]
         except Exception as ex:
             logging.exception("Error while parsing json", ex)
@@ -229,18 +237,26 @@ class ModelResponseParser:
                     return txt
         except Exception as ex:
             pass
-            logging.exception(ex)
+            logging.exception("Error while parsing jsonl", ex)
         return ""
 
 
 class ModelResponseParserBuilder:
-
+    """
+    Generator class for ModelResponseParser creation wth correct type.
+    """
     def __init__(self):
         pass
     
     def generate(self, _model):
         """
-         Generate ModelResponseParser to parse model output and locate the answer
+         Generate ModelResponseParser to parse model output and locate the answer.
+
+         Parameters:
+         - _model: Model type to conduct pre-checks.
+
+         Returns:
+         - ModelResponseParser: ModelResponseParser with type 'json', 'jsonl' or 'text'
         """
         _marker = self._random_string(12)
         _response_parser = ModelResponseParser()
@@ -273,8 +289,8 @@ class ModelResponseParserBuilder:
                   
     def _attempt_convert_json_to_parser(self, prompt, res, _marker):
         res_json = self._attempt_json_parsing(res)
+
         if res_json:
-            # print("Could parse json structure..", res_json)
             loc = self._locate_marker_in_json(res_json, prompt, _marker)
             if loc:
                 _response_parser = ModelResponseParser("json", loc)
@@ -314,7 +330,11 @@ class ModelResponseParserBuilder:
         - dict or None: The parsed JSON response, or None if parsing fails.
         """
         try:
-            return res.json()  
+            response_json = res.json()
+            if type(response_json) == dict:
+                return response_json
+            else:
+                raise ValueError("Response Type not JSON")
         except Exception as ex:
             logging.debug("Could not parse json structure %s", ex)
             # print(ex)
@@ -340,7 +360,10 @@ class ModelResponseParserBuilder:
             for line in lines:
                 # print(line)
                 parsed_line = json.loads(line)
-                yield(parsed_line)
+                if type(parsed_line) == dict:
+                    yield(parsed_line)
+                else:
+                    raise ValueError("Response Type not JSON")
         except Exception as ex:
             logging.debug("Could not parse jsonl structure %s", ex)
             pass
