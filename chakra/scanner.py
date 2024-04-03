@@ -23,15 +23,18 @@ from .parser import DetoxioEvaluationResponseParser, DetoxioResponseEvaluationRe
 class DetoxioGeneratorFilterBuilder:
     def __init__(self):
         self._filter = dtx_prompts_pb2.PromptGenerationFilterOption()
+    
+    @classmethod
+    def get_threat_classes(self):
+        return list(filter(lambda x: "UNSPECIFIED" not in x, map(lambda x: x[0].replace("THREAT_CLASS_", ""), dtx_threat_pb2.ThreatClass.items())))
         
-    # def get_threat_classes(self):
-    #     return list(map(lambda x: x[0], dtx_threat_pb2.ThreatClass.items()))
+    @classmethod
+    def get_threat_categories(self):
+        return list(filter(lambda x: "UNSPECIFIED" not in x, map(lambda x: x[0].replace("THREAT_CATEGORY_", ""), dtx_threat_pb2.ThreatCategory.items())))
         
-    # def get_threat_categories(self):
-    #     return list(map(lambda x: x[0], dtx_threat_pb2.ThreatCategory.items()))
-        
-    # def get_industries(self):
-    #     return list(map(lambda x: x[0], dtx_industry_pb2.IndustryDomain.items()))
+    @classmethod
+    def get_industries(self):
+        return list(filter(lambda x: "UNSPECIFIED" not in x, map(lambda x: x[0].replace("INDUSTRY_DOMAIN_", ""), dtx_industry_pb2.IndustryDomain.items())))
     
     def _get_threat_class(self, cl:str) -> int:
         for tc, v in dtx_threat_pb2.ThreatClass.items():

@@ -82,6 +82,18 @@ chakra webapps <URL> -s session.har --skip_crawling --markdown report.md --json 
 ```
 No Browser will open. Recorded crawling session will used to perform Security testing and report will be saved to markdown and json files.
 
+**Specify filters to generate prompts specific to industry or threat class**
+
+```bash
+chakra webapps https://69c207a7e69699ce8e.gradio.live/ -s demo.har --skip_crawling --json report.json --threat-class bypass --markdown report.md
+```
+
+```bash
+chakra webapps https://69c207a7e69699ce8e.gradio.live/ -s demo.har --skip_crawling --industry healthcare --json report.json --threat-class bypass
+
+```
+
+
 **Other Options**
 ```
 options:
@@ -105,6 +117,16 @@ options:
                         Path to session file for storing crawl results
   --marker MARKER       FUZZ marker. By Default, the tool will detect any of these markers: [[FUZZ]] [FUZZ] FUZZ <<FUZZ>>
                         [[CHAKRA]] [CHAKRA] CHAKRA <<CHAKRA>>
+
+  --industry {HEALTHCARE,FINANCE,RETAIL,AGRICULTURE,AUTOMOTIVE,BANKING,BIOTECHNOLOGY,CHEMICALS,CONSTRUCTION ...}
+                        Filter Prompts related to the industry.
+  --threat-class {TOXICITY,MISINFORMATION,INFORMATION_HAZARD,MALICIOUS_USE,HUMAN_COMPUTER_INTERACTION,AUTOMATION_ACCESS_ENVIRONMENTAL,DEFENSE_BYPASS}
+                        Filter Prompts related to the threat classes.
+  --threat-category {ABUSIVE_LANGUAGE,HATE_SPEECH,HARASSMENT,BULLYING,SEXUAL_ASSAULT,PROFANITY,....}
+                        filter prompts related to the threat categories.
+  --deceptiveness {LOW,MEDIUM,HIGH}
+                        How desceptive the promopts are?
+
 ```
 
 ### As GenAI Mobile Application Scanner

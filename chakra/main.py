@@ -47,6 +47,10 @@ Human Assisted Testing of GenAI Apps and Models:
         epilog="Thank you. Happy GenAI Testing."
     )
     
+    industries = DetoxioGeneratorFilterBuilder.get_industries()
+    threat_classes = DetoxioGeneratorFilterBuilder.get_threat_classes()
+    threat_cats =  DetoxioGeneratorFilterBuilder.get_threat_categories()
+    
     subparsers = parser.add_subparsers(dest='subcommand', help='sub-command help')
 
     # Subparser for scanning webapps
@@ -67,11 +71,10 @@ Human Assisted Testing of GenAI Apps and Models:
     webapps_parser.add_argument("-l", "--log_level", type=str, default="INFO", help="Log Levels - DEBUG, INFO, WARN, ERROR. Default: INFO")
     webapps_parser.add_argument("--marker", type=str, default="", help=f"FUZZ marker. By Default, the tool will detect any of these markers: {' '.join(FUZZING_MARKERS)}")
 
-    webapps_parser.add_argument("--industry", type=str, help="Path to store the report of scanning in json format")
-    webapps_parser.add_argument("--threat-class", type=str, help="Path to store the report of scanning in json format")
-    webapps_parser.add_argument("--threat-category", type=str, help="Path to store the report of scanning in json format")
-    webapps_parser.add_argument("--deceptiveness", type=str, choices=["low", "medium", "high"], help="How desceptive the promopts are?")
-
+    webapps_parser.add_argument("--industry", type=str, choices=industries, help=f"Filter Prompts related to the industry.")
+    webapps_parser.add_argument("--threat-class", type=str, choices=threat_classes, help=f"Filter Prompts related to the threat classes.")
+    webapps_parser.add_argument("--threat-category", type=str, choices=threat_cats, help=f"filter prompts related to the threat categories.")
+    webapps_parser.add_argument("--deceptiveness", type=str, choices=["LOW", "MEDIUM", "HIGH"], help="How desceptive the promopts are?")
 
     # Subparser for scanning models
     # models_parser = subparsers.add_parser('models', help='Scan models')
@@ -86,10 +89,10 @@ Human Assisted Testing of GenAI Apps and Models:
     mobileapps_parser.add_argument("--response_param", type=str, help="Parameter which holds the GenAI response.")
     mobileapps_parser.add_argument("--marker", type=str, default="", help=f"FUZZ marker. By Default, the tool will detect any of these markers: {' '.join(FUZZING_MARKERS)}")
 
-    mobileapps_parser.add_argument("--industry", type=str, help="Path to store the report of scanning in json format")
-    mobileapps_parser.add_argument("--threat-class", type=str, help="Path to store the report of scanning in json format")
-    mobileapps_parser.add_argument("--threat-category", type=str, help="Path to store the report of scanning in json format")
-    mobileapps_parser.add_argument("--deceptiveness", type=str, choices=["low", "medium", "high"], help="How desceptive the promopts are?")
+    mobileapps_parser.add_argument("--industry", type=str, choices=industries, help=f"Filter Prompts related to the industry.")
+    mobileapps_parser.add_argument("--threat-class", type=str, choices=threat_classes, help=f"Filter Prompts related to the threat classes.")
+    mobileapps_parser.add_argument("--threat-category", type=str, choices=threat_cats, help=f"filter prompts related to the threat categories.")
+    mobileapps_parser.add_argument("--deceptiveness", type=str, choices=["LOW", "MEDIUM", "HIGH"], help="How desceptive the promopts are?")
 
 
     # Common Options
