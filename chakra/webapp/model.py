@@ -4,6 +4,7 @@ import requests
 import requests
 import string
 import random
+from retry import retry
 from gradio_client import Client
 
 class WebappRemoteModel:
@@ -135,10 +136,15 @@ class GradioAppModel:
     def _generate_raw(self, orig_prompt):
         prompt = self._create_prompt(orig_prompt)
         args = self._create_predict_arguements(prompt)
-        logging.warn("Calling Gradio App with params: %s", args)
-        out = self._client.predict(*args)
-        logging.warn("Output from Gradio App: %s", out)
+        logging.debug("Calling Gradio App with params: %s", args)
+        # out = self._client.predict(*args)
+        out = self._predict(*args)
+        logging.debug("Output from Gradio App: %s", out)
         return out
+
+    @retry(tries=3, delay=1, max_delay=10, backoff=2, logger=logging)
+    def _predict(self, *args):
+        return self._client.predict(*args)
 
     def _create_prompt(self, text):
         """
@@ -190,6 +196,9 @@ class ModelResponseParser:
         Returns:
         - tuple: A tuple containing the parsed content and the extracted information.
         """
+        if type(response) == str:
+            return response, ""
+        
         if self._content_type == "text":
             return response.content, ""
         elif self._content_type == "json":

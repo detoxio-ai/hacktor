@@ -10,11 +10,85 @@ from .generator import DetoxioPromptGenerator
 from .evaluator import DetoxioPromptResponseEvaluator
 import proto.dtx.services.prompts.v1.prompts_pb2 as prompts_pb2
 import proto.dtx.services.prompts.v1.prompts_pb2_grpc as prompts_pb2_grpc
+import proto.dtx.messages.common.threat_pb2 as dtx_threat_pb2
+import proto.dtx.messages.common.industry_pb2 as dtx_industry_pb2
 import proto.dtx.messages.common.llm_pb2 as llm_pb2
+import proto.dtx.services.prompts.v1.prompts_pb2 as dtx_prompts_pb2
 import google.protobuf.empty_pb2 as empty_pb2
 from google.protobuf.json_format import MessageToDict
 from markdown_builder.document import MarkdownDocument
 from .parser import DetoxioEvaluationResponseParser, DetoxioResponseEvaluationResult
+
+
+class DetoxioGeneratorFilterBuilder:
+    def __init__(self):
+        self._filter = dtx_prompts_pb2.PromptGenerationFilterOption()
+        
+    # def get_threat_classes(self):
+    #     return list(map(lambda x: x[0], dtx_threat_pb2.ThreatClass.items()))
+        
+    # def get_threat_categories(self):
+    #     return list(map(lambda x: x[0], dtx_threat_pb2.ThreatCategory.items()))
+        
+    # def get_industries(self):
+    #     return list(map(lambda x: x[0], dtx_industry_pb2.IndustryDomain.items()))
+    
+    def _get_threat_class(self, cl:str) -> int:
+        for tc, v in dtx_threat_pb2.ThreatClass.items():
+            if cl.lower() in tc.lower():
+                return v
+        raise ValueError(f"Unknown threat class {cl}")
+    
+    def _get_threat_category(self, cat:str) -> int:
+        if not cat:
+            return self
+        for tc, v in dtx_threat_pb2.ThreatCategory.items():
+            if cat.lower() in tc.lower():
+                return v
+        raise ValueError(f"Unknown threat category {cat}")
+    
+    def _get_industry(self, ind:str) -> int:
+        if not ind:
+            return self
+        for tc, v in dtx_industry_pb2.IndustryDomain.items():
+            if ind.lower() in tc.lower():
+                return v
+        raise ValueError(f"Unknown industry {ind}")
+
+    def threat_class(self, tc:str):
+        if not tc:
+            return self
+        self._filter.threat_class = self._get_threat_class(tc)
+        return self
+
+    def threat_category(self, cat:str):
+        if not cat:
+            return self
+        self._filter.threat_category = self._get_threat_category(cat)
+        return self
+
+    def industry(self, ind:str):
+        if not ind:
+            return self
+        self._filter.industry = self._get_industry(ind)
+        return self
+
+    def label(self, key:str, value:str):
+        self._filter.labels[key] = value
+        return self
+
+    def deceptiveness(self, value:str):
+        if not value:
+            return self
+        possible_values = ["low", "medium", "high"]
+        if not value or value.lower() not in possible_values:
+            raise ValueError(f"Unknown deceptiveness {','.join(possible_values)}")
+        self.label("deceptiveness", value.lower())
+        return self
+
+    def build_filter(self):
+        return self._filter
+
 
 class DetoxioModelDynamicScanner(object):
     """
@@ -169,7 +243,9 @@ class DetoxioModelDynamicScannerSession:
         # Clean up resources if needed when exiting the context
         pass
 
-    def generate(self, count=10):
+    def generate(self, count=10, industry:str=None, 
+                 threat_class:str=None, threat_category:str=None, 
+                 deceptiveness:str=None):
         """
         Generate a specified number of prompts.
 
@@ -179,7 +255,10 @@ class DetoxioModelDynamicScannerSession:
         Returns:
             Generator of prompts.
         """
-        return self._generator.generate(count=count)
+        filterb = DetoxioGeneratorFilterBuilder()
+        filterb = filterb.threat_class(threat_class).threat_category(threat_category)
+        filter = filterb.industry(industry).deceptiveness(deceptiveness).build_filter()
+        return self._generator.generate(count=count, filter=filter)
 
     def evaluate(self, prompt: prompts_pb2.Prompt, model_output_text: str) -> prompts_pb2.PromptEvaluationResponse:
         """

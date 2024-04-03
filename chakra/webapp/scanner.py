@@ -61,7 +61,7 @@ class GenAIWebScanner:
         predict_signature = self._detect_gradio_predict_api_signature(url)
         model = GradioAppModel(url, predict_signature, self.options.fuzz_markers)
         # Train model to learn reponse structure and how to extract answer
-        self.logger.debug("Learning model response structure")
+        logging.debug("Learning model response structure")
         model.prechecks()
         return self.__scan_model(model)
 

@@ -14,6 +14,7 @@ import proto.dtx.messages.common.llm_pb2 as llm_pb2
 
 import google.protobuf.empty_pb2 as empty_pb2
 from google.protobuf.json_format import MessageToDict
+import proto.dtx.services.prompts.v1.prompts_pb2 as dtx_prompts_pb2
 
 # Set up a logger for the Prompt Generator
 LOGGER = logging.getLogger("Prompt Generator")
@@ -33,7 +34,7 @@ class DetoxioPromptGenerator(object):
         """
         self._client = client
 
-    def generate(self, count=10) -> List[prompts_pb2.Prompt]:
+    def generate(self, count=10, filter:dtx_prompts_pb2.PromptGenerationFilterOption=None) -> List[prompts_pb2.Prompt]:
         """
         Generate a specified number of prompts.
 
@@ -44,12 +45,12 @@ class DetoxioPromptGenerator(object):
             Generator of prompts.
         """
         for i in range(0, count):
-            prompt_response = self._get_a_prompt()
+            prompt_response = self._get_a_prompt(filter)
             for prompt in prompt_response.prompts:
                 yield(prompt)
 
     @retry(tries=3, delay=1, max_delay=60, backoff=5, logger=LOGGER)
-    def _get_a_prompt(self, count=1) -> prompts_pb2.Prompt:
+    def _get_a_prompt(self, count=1, filter=None) -> prompts_pb2.Prompt:
         """
         Retrieve a prompt from detoxio.ai.
 
@@ -59,5 +60,5 @@ class DetoxioPromptGenerator(object):
         Returns:
             A single prompt as a prompts_pb2.Prompt object.
         """
-        req = prompts_pb2.PromptGenerationRequest(count=count)
+        req = prompts_pb2.PromptGenerationRequest(count=count, filter=filter)
         return self._client.GeneratePrompts(req)
