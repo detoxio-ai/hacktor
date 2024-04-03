@@ -1,7 +1,9 @@
 import os
 import argparse
 import logging
+from chakra.scanner import DetoxioGeneratorFilterBuilder
 from chakra.webapp.scanner import GenAIWebScanner, CrawlerOptions, ScannerOptions, FUZZING_MARKERS
+
 
 def setup_logging(args):
     log_level = getattr(args, 'log_level', 'INFO').upper()
@@ -19,6 +21,12 @@ def check_prerequisites(args):
     
     return True
 
+
+def _create_prompt_filter(args):
+    filterb = DetoxioGeneratorFilterBuilder()
+    filterb = filterb.threat_class(args.threat_class).threat_category(args.threat_category)
+    filter = filterb.industry(args.industry).deceptiveness(args.deceptiveness).build_filter()
+    return filter
 
 def main():
     parser = argparse.ArgumentParser(
@@ -51,12 +59,19 @@ Human Assisted Testing of GenAI Apps and Models:
     webapps_parser.add_argument("--prompt_prefix", type=str, default="", help="Add a prefix to every prompt to make prompts more contextual")
     webapps_parser.add_argument("-m", "--speed", type=int, default=300, help="set time in milliseconds for executions of APIs.")
     webapps_parser.add_argument("-b", "--browser", type=str, help="Browser type to run playwright automation on. Allowed values are Webkit, Firefox and Chromium.")
+    
     # Common Options
     webapps_parser.add_argument("--json", type=str, help="Path to store the report of scanning in json format")
     webapps_parser.add_argument("--markdown", type=str, help="Path to store the report of scanning in markdown format ")
     webapps_parser.add_argument("-n", "--no_of_tests", type=int, default=10, help="No of Tests to run. Default 10")
     webapps_parser.add_argument("-l", "--log_level", type=str, default="INFO", help="Log Levels - DEBUG, INFO, WARN, ERROR. Default: INFO")
     webapps_parser.add_argument("--marker", type=str, default="", help=f"FUZZ marker. By Default, the tool will detect any of these markers: {' '.join(FUZZING_MARKERS)}")
+
+    webapps_parser.add_argument("--industry", type=str, help="Path to store the report of scanning in json format")
+    webapps_parser.add_argument("--threat-class", type=str, help="Path to store the report of scanning in json format")
+    webapps_parser.add_argument("--threat-category", type=str, help="Path to store the report of scanning in json format")
+    webapps_parser.add_argument("--deceptiveness", type=str, choices=["low", "medium", "high"], help="How desceptive the promopts are?")
+
 
     # Subparser for scanning models
     # models_parser = subparsers.add_parser('models', help='Scan models')
@@ -70,6 +85,13 @@ Human Assisted Testing of GenAI Apps and Models:
     mobileapps_parser.add_argument("-r", "--request", type=str, help="Path to input burp request file.")
     mobileapps_parser.add_argument("--response_param", type=str, help="Parameter which holds the GenAI response.")
     mobileapps_parser.add_argument("--marker", type=str, default="", help=f"FUZZ marker. By Default, the tool will detect any of these markers: {' '.join(FUZZING_MARKERS)}")
+
+    mobileapps_parser.add_argument("--industry", type=str, help="Path to store the report of scanning in json format")
+    mobileapps_parser.add_argument("--threat-class", type=str, help="Path to store the report of scanning in json format")
+    mobileapps_parser.add_argument("--threat-category", type=str, help="Path to store the report of scanning in json format")
+    mobileapps_parser.add_argument("--deceptiveness", type=str, choices=["low", "medium", "high"], help="How desceptive the promopts are?")
+
+
     # Common Options
     mobileapps_parser.add_argument("--json", type=str, help="Path to store the report of scanning in json format")
     mobileapps_parser.add_argument("--markdown", type=str, help="Path to store the report of scanning in markdown format ")
@@ -82,6 +104,7 @@ Human Assisted Testing of GenAI Apps and Models:
     # Check if the program should run
     check_prerequisites(args)
 
+
     report = None
     if args.subcommand == 'webapps':
         try:
@@ -89,13 +112,15 @@ Human Assisted Testing of GenAI Apps and Models:
                 logging.warning("Both Skip Testing and Crawling should not be specified. Doing Nothing")
                 return
             crawl_options = CrawlerOptions(speed=args.speed, browser_name=args.browser, headless=False)
+            prompt_filter_options = _create_prompt_filter(args)
             scan_options = ScannerOptions(session_file_path=args.session, 
                                           skip_crawling=args.skip_crawling, 
                                           skip_testing=args.skip_testing, 
                                           save_session=args.save_session, 
                                           crawler_options=crawl_options, 
                                           no_of_tests=args.no_of_tests, 
-                                          prompt_prefix=args.prompt_prefix)
+                                          prompt_prefix=args.prompt_prefix,
+                                          prompt_filter=prompt_filter_options)
             scanner = GenAIWebScanner(scan_options)
             report = scanner.scan(args.url)
         except Exception as ex:
@@ -112,6 +137,7 @@ Human Assisted Testing of GenAI Apps and Models:
         if args.marker:
             input_markers = args.marker.split()
         try:
+            prompt_filter_options = _create_prompt_filter(args)
             scan_options = ScannerOptions(session_file_path=args.request, 
                                         skip_crawling=True, 
                                         skip_testing=False, 
@@ -120,7 +146,8 @@ Human Assisted Testing of GenAI Apps and Models:
                                         no_of_tests=args.no_of_tests, 
                                         prompt_prefix=args.prompt_prefix,
                                         output_field=args.response_param,
-                                        prompt_param=args.prompt_parameter or input_markers)
+                                        prompt_param=args.prompt_parameter or input_markers,
+                                        prompt_filter=prompt_filter_options)
             scanner = GenAIWebScanner(scan_options)
             report = scanner.scan(args.url, scanType="mobileapp")
         except Exception as ex:

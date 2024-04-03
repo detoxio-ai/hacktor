@@ -10,6 +10,7 @@ from chakra.webapp.har import Har2WebappRemoteModel, BurpRequest2MobileAppRemote
 from chakra.webapp.crawler import HumanAssistedWebCrawler
 from chakra.scanner import DetoxioModelDynamicScanner
 from .model import GradioAppModel
+import proto.dtx.services.prompts.v1.prompts_pb2 as dtx_prompts_pb2
 
 from google.protobuf import json_format
 import proto.dtx.services.prompts.v1.prompts_pb2 as prompts_pb2
@@ -37,7 +38,8 @@ class ScannerOptions:
                  prompt_param="",
                  output_field="", 
                  skip_testing=False, 
-                 fuzz_markers=None):
+                 fuzz_markers=None,
+                 prompt_filter:dtx_prompts_pb2.PromptGenerationFilterOption=None):
         self.session_file_path = session_file_path
         self.skip_crawling = skip_crawling
         self.crawler_options = crawler_options
@@ -47,7 +49,8 @@ class ScannerOptions:
         self.prompt_param = prompt_param
         self.output_field = output_field
         self.fuzz_markers = fuzz_markers or FUZZING_MARKERS
-        self.skip_testing = skip_testing
+        self.skip_testing = skip_testing     
+        self.prompt_filter = prompt_filter   
 
 class GenAIWebScanner:
 
@@ -181,7 +184,7 @@ class GenAIWebScanner:
             return self.__attempt_read_prompts_from_stdin(self.options.no_of_tests)
         else:
             logging.debug("Using Detoxio AI Prompts Generation..")
-            return scanner_session.generate(count=self.options.no_of_tests)
+            return scanner_session.generate(count=self.options.no_of_tests, filter=self.options.prompt_filter)
 
     def _are_prompts_available_from_stdin(self):
         # List of file descriptors to monitor for input

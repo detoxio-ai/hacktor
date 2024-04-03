@@ -243,9 +243,7 @@ class DetoxioModelDynamicScannerSession:
         # Clean up resources if needed when exiting the context
         pass
 
-    def generate(self, count=10, industry:str=None, 
-                 threat_class:str=None, threat_category:str=None, 
-                 deceptiveness:str=None):
+    def generate(self, count=10, filter:dtx_prompts_pb2.PromptGenerationFilterOption=None):
         """
         Generate a specified number of prompts.
 
@@ -255,9 +253,6 @@ class DetoxioModelDynamicScannerSession:
         Returns:
             Generator of prompts.
         """
-        filterb = DetoxioGeneratorFilterBuilder()
-        filterb = filterb.threat_class(threat_class).threat_category(threat_category)
-        filter = filterb.industry(industry).deceptiveness(deceptiveness).build_filter()
         return self._generator.generate(count=count, filter=filter)
 
     def evaluate(self, prompt: prompts_pb2.Prompt, model_output_text: str) -> prompts_pb2.PromptEvaluationResponse:

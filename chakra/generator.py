@@ -45,7 +45,7 @@ class DetoxioPromptGenerator(object):
             Generator of prompts.
         """
         for i in range(0, count):
-            prompt_response = self._get_a_prompt(filter)
+            prompt_response = self._get_a_prompt(count=1, filter=filter)
             for prompt in prompt_response.prompts:
                 yield(prompt)
 
@@ -60,5 +60,7 @@ class DetoxioPromptGenerator(object):
         Returns:
             A single prompt as a prompts_pb2.Prompt object.
         """
+        
+        filter = filter or dtx_prompts_pb2.PromptGenerationFilterOption()
         req = prompts_pb2.PromptGenerationRequest(count=count, filter=filter)
         return self._client.GeneratePrompts(req)
