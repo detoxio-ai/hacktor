@@ -6,7 +6,7 @@ import copy
 from tqdm import tqdm
 import logging
 from addict import Dict
-from chakra.webapp.har import Har2WebappRemoteModel
+from chakra.webapp.har import Har2WebappRemoteModel, BurpRequest2MobileAppRemoteModel
 from chakra.webapp.crawler import HumanAssistedWebCrawler
 from chakra.scanner import DetoxioModelDynamicScanner
 from .model import GradioAppModel
@@ -33,8 +33,10 @@ class ScannerOptions:
                  crawler_options=None, 
                  save_session=True,
                  no_of_tests=10, 
-                 prompt_prefix="", 
-                skip_testing=False, 
+                 prompt_prefix="",
+                 prompt_param="",
+                 output_field="", 
+                 skip_testing=False, 
                  fuzz_markers=None):
         self.session_file_path = session_file_path
         self.skip_crawling = skip_crawling
@@ -42,6 +44,8 @@ class ScannerOptions:
         self.save_session = save_session
         self.no_of_tests = no_of_tests
         self.prompt_prefix = prompt_prefix
+        self.prompt_param = prompt_param
+        self.output_field = output_field
         self.fuzz_markers = fuzz_markers or FUZZING_MARKERS
         self.skip_testing = skip_testing
 
@@ -50,11 +54,14 @@ class GenAIWebScanner:
     def __init__(self, options:ScannerOptions):
         self.options = options
     
-    def scan(self, url):
-        if GradioAppModel.is_gradio_endpoint(url):
-            return self._scan_gradio_app(url)
+    def scan(self, url, scanType=""):
+        if scanType == "mobileapp":
+            return self._scan_mobileapp(url)
         else:
-            return self._scan_webapp(url)
+            if GradioAppModel.is_gradio_endpoint(url):
+                return self._scan_gradio_app(url)
+            else:
+                return self._scan_webapp(url)
     
     def _scan_gradio_app(self, url):
         # Create model
@@ -84,6 +91,14 @@ class GenAIWebScanner:
         if i == 0:
             logging.warn("No requests found in session with Fuzzing Marker %s. Skipping testing..", )
 
+    def _scan_mobileapp(self, url):
+
+        logging.debug("Starting tests. Using Recorded Request to perform testing..")
+        conv = BurpRequest2MobileAppRemoteModel(url, self.options.session_file_path, prompt_param=self.options.prompt_param, output_field=self.options.output_field)
+        model = conv.convert()
+        logging.info("Doing Prechecks..")
+        model.prechecks()
+        return self.__scan_model(model)
 
     def _detect_gradio_predict_api_signature(self, url):
         """
@@ -131,6 +146,7 @@ class GenAIWebScanner:
 
     def __scan_model(self, model):
         # Provide your API key or set it as an environment variable
+        #TODO: REMOVE API KEYYYYY
         api_key = ''
 
         scanner = DetoxioModelDynamicScanner(api_key=api_key)
@@ -144,9 +160,7 @@ class GenAIWebScanner:
                     # Simulate model output
                     raw_output, parsed_output = model.generate(prompt.data.content)
                     model_output_text = parsed_output if parsed_output else raw_output
-
                     logging.debug("Model Executed: \n%s", model_output_text)
-
                     # Evaluate the model interaction
                     if len(model_output_text) > 2: # Make sure the output is not empty
                         evaluation_response = session.evaluate(prompt, model_output_text)
