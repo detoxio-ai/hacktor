@@ -143,7 +143,7 @@ class GenAIWebScanner:
         logging.debug("Identified Gradio Signature", predict_signature)
         if len(predict_signature) <= 0:
             logging.warn("[WARNING] Could not detect gradio predict signature. Did you specify [FUZZ] marker?")
-        print(predict_signature)
+        # print(predict_signature)
         return "/predict", predict_signature.get('sig')
 
     def _crawl(self, url, intercept_request_hook=None):
@@ -182,6 +182,7 @@ class GenAIWebScanner:
                     logging.debug("Generated Prompt: \n%s", prompt.data.content)
                     # Simulate model output
                     raw_output, parsed_output = model.generate(prompt.data.content)
+                    # print(raw_output, "==========================", parsed_output)
                     model_output_text = parsed_output if parsed_output else raw_output
                     logging.debug("Model Executed: \n%s", model_output_text)
                     # Evaluate the model interaction
