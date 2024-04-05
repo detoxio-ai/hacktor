@@ -34,6 +34,7 @@ class HumanAssistedWebCrawler:
                      Chakra does not support Web Sockets yet!!!\n
                      WebSocket opened on URL {ws.url}
                      ##############""")
+        ws.send
         # print(f"WebSocket opened: {ws.url}")
         # ws.on("framesent", lambda payload: print("Frame sent:", payload))
         # ws.on("framereceived", lambda payload: print("Frame received:", payload))

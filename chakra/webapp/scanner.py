@@ -10,6 +10,7 @@ from chakra.webapp.har import Har2WebappRemoteModel, BurpRequest2MobileAppRemote
 from chakra.webapp.crawler import HumanAssistedWebCrawler
 from chakra.scanner import DetoxioModelDynamicScanner
 from .model import GradioAppModel
+from .gradio import GradioUtils
 import proto.dtx.services.prompts.v1.prompts_pb2 as dtx_prompts_pb2
 
 from google.protobuf import json_format
@@ -53,7 +54,7 @@ class ScannerOptions:
         self.prompt_filter = prompt_filter   
 
 class GenAIWebScanner:
-
+    rutils = GradioUtils()
     def __init__(self, options:ScannerOptions):
         self.options = options
     
@@ -61,15 +62,15 @@ class GenAIWebScanner:
         if scanType == "mobileapp":
             return self._scan_mobileapp(url)
         else:
-            if GradioAppModel.is_gradio_endpoint(url):
+            if self.rutils.is_gradio_endpoint(url):
                 return self._scan_gradio_app(url)
             else:
                 return self._scan_webapp(url)
     
     def _scan_gradio_app(self, url):
         # Create model
-        predict_signature = self._detect_gradio_predict_api_signature(url)
-        model = GradioAppModel(url, predict_signature, self.options.fuzz_markers)
+        api_name, predict_signature = self._detect_gradio_predict_api_signature(url)
+        model = GradioAppModel(url, api_name, predict_signature, self.options.fuzz_markers)
         # Train model to learn reponse structure and how to extract answer
         logging.debug("Learning model response structure")
         model.prechecks()
@@ -107,6 +108,24 @@ class GenAIWebScanner:
         """
             Predict signature of remote gradio endpoint
         """
+        try:
+            return self._detect_gradio_predict_api_signature_via_api_spec(url)
+        except Exception as ex:
+            logging.exception(ex)
+        return self._detect_gradio_predict_api_signature_via_crawling(url)
+
+
+    def _detect_gradio_predict_api_signature_via_api_spec(self, url):
+        """
+            Predict signature of remote gradio endpoint
+        """
+        return self.rutils.parse_api_signature(url, self.options.fuzz_markers[0])
+
+
+    def _detect_gradio_predict_api_signature_via_crawling(self, url):
+        """
+            Predict signature of remote gradio endpoint
+        """
         predict_signature = {}
         def _handle_request(request):
             logging.debug(f'>> {request.method} {request.url} \n')  
@@ -124,7 +143,8 @@ class GenAIWebScanner:
         logging.debug("Identified Gradio Signature", predict_signature)
         if len(predict_signature) <= 0:
             logging.warn("[WARNING] Could not detect gradio predict signature. Did you specify [FUZZ] marker?")
-        return predict_signature.get('sig')
+        print(predict_signature)
+        return "/predict", predict_signature.get('sig')
 
     def _crawl(self, url, intercept_request_hook=None):
         """

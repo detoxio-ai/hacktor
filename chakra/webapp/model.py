@@ -3,8 +3,10 @@ import logging
 import requests
 import string
 import random
+from urllib.parse import urlparse
 from retry import retry
 from gradio_client import Client
+from .gradio import GradioUtils
 
 class RequestModel:
     def __init__(self, method, url, headers, data, ctype):
@@ -45,7 +47,7 @@ class WebappRemoteModel:
         - tuple: A tuple containing the response content and possible model output, is parsing is successful otherwise empty.
         """
         res = self._generate_raw(input_text)
-        return self._response_parser.parse(res)
+        return self._response_parser.parse(input_text, res)
 
     def _generate_raw(self, input_text):
         """
@@ -110,28 +112,21 @@ class WebappRemoteModel:
         mrpb = ModelResponseParserBuilder()
         self._response_parser = mrpb.generate(self)
 
+
 class GradioAppModel:
-    def __init__(self, url, signature, fuzz_markers, prompt_prefix=""):
-        self._url = url
-        self._client = Client(url)
+    rutils = GradioUtils()
+    def __init__(self, url, api_name, signature, fuzz_markers, prompt_prefix=""):
+        self._url = self.rutils.normalize_url(url)
+        self._client = Client(self._url, verbose=False)
+        self.api_name = api_name
         self._signature = signature
         self._fuzz_markers = fuzz_markers
         self._prompt_prefix = prompt_prefix
         self._response_parser = ModelResponseParser()
-
-    @classmethod
-    def is_gradio_endpoint(self, url):
-        try:
-            logging.debug("Checking if url is a gradio endpint")
-            _client = Client(url)
-            return True
-        except Exception as ex:
-            logging.debug("Received while connecting to client %s", ex)
-            return False
     
     def generate(self, prompt):
         res =  self._generate_raw(prompt)
-        return self._response_parser.parse(res)
+        return self._response_parser.parse(prompt, res)
     
     def prechecks(self):
         """
@@ -151,7 +146,7 @@ class GradioAppModel:
 
     @retry(tries=3, delay=1, max_delay=10, backoff=2, logger=logging)
     def _predict(self, *args):
-        return self._client.predict(*args)
+        return self._client.predict(*args, api_name=self.api_name)
 
     def _create_prompt(self, text):
         """
@@ -193,7 +188,7 @@ class ModelResponseParser:
         self._content_type = content_type
         self._location = location
     
-    def parse(self, response):
+    def parse(self, prompt, response):
         """
         Parse the response and extract relevant information.
 
@@ -203,9 +198,11 @@ class ModelResponseParser:
         Returns:
         - tuple: A tuple containing the parsed content and the extracted information.
         """
-        if type(response) == str:
-            return response, ""
-        
+        if type(response) in [str, tuple, dict, list, int]:
+            a = str(response)
+            b = a.replace(prompt, "")
+            return a, b
+                
         if self._content_type == "text":
             return response.content, ""
         elif self._content_type == "json":
@@ -274,9 +271,7 @@ class ModelResponseParserBuilder:
         texts = [f"Do you know about {_marker}? Can you tell something it?", 
                 f"Hello, {_marker}? How are you?"]
         for prompt in texts:
-            # print("Sending prompt..", prompt)
             res = _model._generate_raw(prompt)
-            # print("Response ", res)
             _response_parser = self._attempt_convert_res_2_parser(prompt, res, _marker)
             if _response_parser:
                 break
@@ -287,7 +282,8 @@ class ModelResponseParserBuilder:
         # Try json
         methods = [
             self._attempt_convert_json_to_parser,
-            self._attempt_convert_jsonl_to_parser
+            self._attempt_convert_jsonl_to_parser,
+            self._attempt_python_structure,
         ]
         for method in methods:
             parser = method(prompt, res, _marker)
@@ -296,6 +292,17 @@ class ModelResponseParserBuilder:
         # Return default 
         return ModelResponseParser()
                   
+                  
+    def _attempt_python_structure(self, prompt, res, marker):
+        a = str(res)
+        a.replace(prompt, "")
+        if marker in a :
+            logging.debug("Unknown format found, however Response has marker")
+            return ModelResponseParser("convert_str_replace_prompt", "")
+        logging.debug("_attempt_python_structure detection failed")
+        return None
+
+            
     def _attempt_convert_json_to_parser(self, prompt, res, _marker):
         res_json = self._attempt_json_parsing(res)
 

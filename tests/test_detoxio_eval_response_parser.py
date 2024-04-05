@@ -22,98 +22,98 @@ RESULT_BIG = {
                             "threatClass": "TOXICITY",
                             "threatCategory": "ABUSIVE_LANGUAGE"
                         },
-                        "status": "SAFE"
+                        "status": "THREAT_EVALUATION_STATUS_SAFE"
                         },
                         {
                         "threat": {
                             "threatClass": "TOXICITY",
                             "threatCategory": "HATE_SPEECH"
                         },
-                        "status": "SAFE"
+                        "status": "THREAT_EVALUATION_STATUS_SAFE"
                         },
                         {
                         "threat": {
                             "threatClass": "TOXICITY",
                             "threatCategory": "HARASSMENT"
                         },
-                        "status": "SAFE"
+                        "status": "THREAT_EVALUATION_STATUS_SAFE"
                         },
                         {
                         "threat": {
                             "threatClass": "TOXICITY",
                             "threatCategory": "BULLYING"
                         },
-                        "status": "SAFE"
+                        "status": "THREAT_EVALUATION_STATUS_SAFE"
                         },
                         {
                         "threat": {
                             "threatClass": "TOXICITY",
                             "threatCategory": "PROFANITY"
                         },
-                        "status": "SAFE"
+                        "status": "THREAT_EVALUATION_STATUS_SAFE"
                         },
                         {
                         "threat": {
                             "threatClass": "TOXICITY",
                             "threatCategory": "SEXUAL_ASSAULT"
                         },
-                        "status": "SAFE"
+                        "status": "THREAT_EVALUATION_STATUS_SAFE"
                         },
                         {
                         "threat": {
                             "threatClass": "MALICIOUS_USE",
                             "threatCategory": "MALWARE_GENERATION"
                         },
-                        "status": "SAFE"
+                        "status": "THREAT_EVALUATION_STATUS_SAFE"
                         },
                         {
                         "threat": {
                             "threatClass": "MALICIOUS_USE",
                             "threatCategory": "WEAPONIZATION"
                         },
-                        "status": "SAFE"
+                        "status": "THREAT_EVALUATION_STATUS_SAFE"
                         },
                         {
                         "threat": {
                             "threatClass": "MALICIOUS_USE",
                             "threatCategory": "FRAUD"
                         },
-                        "status": "SAFE"
+                        "status": "THREAT_EVALUATION_STATUS_SAFE"
                         },
                         {
                         "threat": {
                             "threatClass": "MALICIOUS_USE",
                             "threatCategory": "PHISHING"
                         },
-                        "status": "SAFE"
+                        "status": "THREAT_EVALUATION_STATUS_SAFE"
                         },
                         {
                         "threat": {
                             "threatClass": "MALICIOUS_USE",
                             "threatCategory": "THEFT"
                         },
-                        "status": "SAFE"
+                        "status": "THREAT_EVALUATION_STATUS_SAFE"
                         },
                         {
                         "threat": {
                             "threatClass": "MALICIOUS_USE",
                             "threatCategory": "VIOLENCE"
                         },
-                        "status": "SAFE"
+                        "status": "THREAT_EVALUATION_STATUS_SAFE"
                         },
                         {
                         "threat": {
                             "threatClass": "MALICIOUS_USE",
                             "threatCategory": "CRIME"
                         },
-                        "status": "SAFE"
+                        "status": "THREAT_EVALUATION_STATUS_SAFE"
                         },
                         {
                         "threat": {
                             "threatClass": "MALICIOUS_USE",
                             "threatCategory": "CBRN"
                         },
-                        "status": "SAFE"
+                        "status": "THREAT_EVALUATION_STATUS_SAFE"
                         }
                     ],
                     "evaluatedAt": "2024-03-12T09:49:13.426075Z"
@@ -136,8 +136,8 @@ RESULT_1 = {
                 "message": {"content": "..."}
             },
             "results": [
-                {"threat": {"threatClass": "TOXICITY", "threatCategory": "ABUSIVE_LANGUAGE"}, "status": "SAFE"},
-                {"threat": {"threatClass": "TOXICITY", "threatCategory": "HATE_SPEECH"}, "status": "SAFE"}
+                {"threat": {"threatClass": "TOXICITY", "threatCategory": "ABUSIVE_LANGUAGE"}, "status": "THREAT_EVALUATION_STATUS_SAFE"},
+                {"threat": {"threatClass": "TOXICITY", "threatCategory": "HATE_SPEECH"}, "status": "THREAT_EVALUATION_STATUS_SAFE"}
             ]
         }
     ]
@@ -157,8 +157,8 @@ RESULT_2 = {
                 "message": {"content": "..."}
             },
             "results": [
-                {"threat": {"threatClass": "TOXICITY", "threatCategory": "ABUSIVE_LANGUAGE"}, "status": "UNSAFE"},
-                {"threat": {"threatClass": "TOXICITY", "threatCategory": "HATE_SPEECH"}, "status": "SAFE"}
+                {"threat": {"threatClass": "TOXICITY", "threatCategory": "ABUSIVE_LANGUAGE"}, "status": "THREAT_EVALUATION_STATUS_UNSAFE"},
+                {"threat": {"threatClass": "TOXICITY", "threatCategory": "HATE_SPEECH"}, "status": "THREAT_EVALUATION_STATUS_SAFE"}
             ]
         }
     ]
@@ -169,7 +169,7 @@ def test_parse_single_eval():
     parser = DetoxioEvaluationResponseParser()
     result = parser.parse(RESULT_1)
     
-    assert result.status() == "SAFE"
+    assert result.status() == "THREAT_EVALUATION_STATUS_SAFE"
     assert len(list(result.threats())) == 2
 
 # Test case to ensure parsing of single evaluation result with different statuses
@@ -177,8 +177,8 @@ def test_parse_single_eval_with_different_status():
     parser = DetoxioEvaluationResponseParser()
     result = parser.parse(RESULT_2)
     
-    assert result.status() == "UNSAFE"
-    assert len(list(result.threats(filter_by_status='UNSAFE'))) == 1
-    assert len(list(result.threats("SAFE"))) == 1
+    assert result.status() == "THREAT_EVALUATION_STATUS_UNSAFE"
+    assert len(list(result.threats(filter_by_status='THREAT_EVALUATION_STATUS_UNSAFE'))) == 1
+    assert len(list(result.threats("THREAT_EVALUATION_STATUS_SAFE"))) == 1
 
 # Add more test cases for different scenarios

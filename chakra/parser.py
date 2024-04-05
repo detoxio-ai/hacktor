@@ -17,13 +17,13 @@ class DetoxioResponseEvaluationResult:
                             'content': '...'
                         }
                     },
-                    'status': 'SAFE',
+                    'status': 'THREAT_EVALUATION_STATUS_SAFE',
                     'responses': [
                         {
                             'message': {'content': '...'},
-                            'status': 'SAFE',
+                            'status': 'THREAT_EVALUATION_STATUS_SAFE',
                             'threats': [
-                                {'threat': {'threatClass': 'TOXICITY', 'threatCategory': 'ABUSIVE_LANGUAGE'}, 'status': 'SAFE'},
+                                {'threat': {'threatClass': 'TOXICITY', 'threatCategory': 'ABUSIVE_LANGUAGE'}, 'status': 'THREAT_EVALUATION_STATUS_SAFE'},
                                 ...
                             ]
                         },
@@ -70,7 +70,7 @@ class DetoxioResponseEvaluationResult:
         return self.__result["status"]
     
     def is_unsafe(self):
-        return "UNSAFE" in self.status().upper()
+        return "THREAT_EVALUATION_STATUS_UNSAFE" in self.status().upper()
     
     def threats(self, filter_by_status: str = None) -> Dict:
         """
@@ -84,7 +84,7 @@ class DetoxioResponseEvaluationResult:
                 Example:
                 {
                     'threat': {'threatClass': 'TOXICITY', 'threatCategory': 'ABUSIVE_LANGUAGE'},
-                    'status': 'SAFE'
+                    'status': 'THREAT_EVALUATION_STATUS_SAFE'
                 }
         """
         if not filter_by_status:
@@ -106,7 +106,7 @@ class DetoxioResponseEvaluationResult:
                 [
                     {
                         'threat': {'threatClass': 'TOXICITY', 'threatCategory': 'ABUSIVE_LANGUAGE'},
-                        'status': 'SAFE'
+                        'status': 'THREAT_EVALUATION_STATUS_SAFE'
                     }
                 ]
         """
@@ -122,11 +122,11 @@ class DetoxioResponseEvaluationResult:
                 [
                     {
                         'threat': {'threatClass': 'TOXICITY', 'threatCategory': 'ABUSIVE_LANGUAGE'},
-                        'status': 'SAFE'
+                        'status': 'THREAT_EVALUATION_STATUS_SAFE'
                     }
                 ]
         """
-        return self.threats(filter_by_status="SAFE")
+        return self.threats(filter_by_status="THREAT_EVALUATION_STATUS_SAFE")
 
 
     def get_threat_category_and_status_pair(self):
@@ -136,7 +136,7 @@ class DetoxioResponseEvaluationResult:
         Yields:
             tuple: A tuple containing the threat status and threat category.
                 Example:
-                ('SAFE', 'ABUSIVE_LANGUAGE')
+                ('THREAT_EVALUATION_STATUS_SAFE', 'ABUSIVE_LANGUAGE')
         """
         for threat in self.threats():
             yield((threat['status'], threat['threat']['threatCategory']))
@@ -148,7 +148,7 @@ class DetoxioResponseEvaluationResult:
         Yields:
             tuple: A tuple containing the threat status and threat class.
                 Example:
-                ('SAFE', 'TOXICITY')
+                ('THREAT_EVALUATION_STATUS_SAFE', 'TOXICITY')
         """
         for threat in self.threats():
             yield((threat['status'], threat['threat']['threatClass']))
@@ -161,7 +161,7 @@ class DetoxioResponseEvaluationResult:
         Yields:
             tuple: A tuple containing the threat status and threat category.
                 Example:
-                ('SAFE', 'ABUSIVE_LANGUAGE')
+                ('THREAT_EVALUATION_STATUS_SAFE', 'ABUSIVE_LANGUAGE')
         """
         for threat in self.threats(filter_by_status="THREAT_EVALUATION_STATUS_UNSAFE"):
             yield(threat['threat']['threatCategory'])
@@ -198,23 +198,23 @@ class DetoxioEvaluationResponseParser:
         prompt = eval_result["prompt"]
         r = {
             "prompt": prompt,
-            "status": "SAFE",
+            "status": "THREAT_EVALUATION_STATUS_SAFE",
             "responses": []
         }
         for response in eval_result["responses"]:
             eval_response = {
                 "message": response['response']["message"],
-                "status": "SAFE",
+                "status": "THREAT_EVALUATION_STATUS_SAFE",
                 "threats": []
             }
             for threat in response.get("results", {}):
                 if threat["status"] == 'THREAT_EVALUATION_STATUS_UNSAFE':
                     # Set the overall threats result as unsafe
-                    eval_response["status"] = "UNSAFE"
+                    eval_response["status"] = "THREAT_EVALUATION_STATUS_UNSAFE"
                 eval_response["threats"].append(threat)
-            if eval_response["status"] == "UNSAFE":
+            if eval_response["status"] == "THREAT_EVALUATION_STATUS_UNSAFE":
                 # Set the overall result as unsafe
-                r["status"] = "UNSAFE"
+                r["status"] = "THREAT_EVALUATION_STATUS_UNSAFE"
             r["responses"].append(eval_response)
 
         return DetoxioResponseEvaluationResult(r)

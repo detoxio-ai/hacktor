@@ -6,7 +6,7 @@ from chakra.webapp.scanner import GenAIWebScanner, CrawlerOptions, ScannerOption
 
 
 def setup_logging(args):
-    log_level = getattr(args, 'log_level', 'INFO').upper()
+    log_level = getattr(args, 'log_level', 'WARN').upper()
     level = logging.getLevelName(log_level)
     logging.basicConfig(level=level)
 
@@ -68,7 +68,7 @@ Human Assisted Testing of GenAI Apps and Models:
     webapps_parser.add_argument("--json", type=str, help="Path to store the report of scanning in json format")
     webapps_parser.add_argument("--markdown", type=str, help="Path to store the report of scanning in markdown format ")
     webapps_parser.add_argument("-n", "--no_of_tests", type=int, default=10, help="No of Tests to run. Default 10")
-    webapps_parser.add_argument("-l", "--log_level", type=str, default="INFO", help="Log Levels - DEBUG, INFO, WARN, ERROR. Default: INFO")
+    webapps_parser.add_argument("-l", "--log_level", type=str, default="WARN", help="Log Levels - DEBUG, INFO, WARN, ERROR. Default: INFO")
     webapps_parser.add_argument("--marker", type=str, default="", help=f"FUZZ marker. By Default, the tool will detect any of these markers: {' '.join(FUZZING_MARKERS)}")
 
     webapps_parser.add_argument("--industry", type=str, choices=industries, help=f"Filter Prompts related to the industry.")
@@ -93,13 +93,30 @@ Human Assisted Testing of GenAI Apps and Models:
     mobileapps_parser.add_argument("--threat-class", type=str, choices=threat_classes, help=f"Filter Prompts related to the threat classes.")
     mobileapps_parser.add_argument("--threat-category", type=str, choices=threat_cats, help=f"filter prompts related to the threat categories.")
     mobileapps_parser.add_argument("--deceptiveness", type=str, choices=["LOW", "MEDIUM", "HIGH"], help="How desceptive the promopts are?")
-
-
     # Common Options
     mobileapps_parser.add_argument("--json", type=str, help="Path to store the report of scanning in json format")
     mobileapps_parser.add_argument("--markdown", type=str, help="Path to store the report of scanning in markdown format ")
     mobileapps_parser.add_argument("-n", "--no_of_tests", type=int, default=10, help="No of Tests to run. Default 10")
-    mobileapps_parser.add_argument("-l", "--log_level", type=str, default="INFO", help="Log Levels - DEBUG, INFO, WARN, ERROR. Default: INFO")
+    mobileapps_parser.add_argument("-l", "--log_level", type=str, default="WARN", help="Log Levels - DEBUG, INFO, WARN, ERROR. Default: INFO")
+
+
+    # Subparser for Gradio Rest Endpoints
+    gradio_parser = subparsers.add_parser('gradio-rest-apis', help='Scan Gradio Rest APIs')
+    gradio_parser.add_argument("url", type=str, help="Starting URL for crawling. Ex: safedepdev/Pokebot or https://huggingface.co/spaces/safedepdev/Pokebot")
+    gradio_parser.add_argument("-s", "--session", type=str, help="Path to session file for storing crawl results")
+    gradio_parser.add_argument("--prompt_prefix", type=str, default="", help="Add a prefix to every prompt to make prompts more contextual")
+    gradio_parser.add_argument("--api-name", type=str, default="", help="API name to test. By Default, predict the API.")
+    
+    # Common Options
+    gradio_parser.add_argument("--json", type=str, help="Path to store the report of scanning in json format")
+    gradio_parser.add_argument("--markdown", type=str, help="Path to store the report of scanning in markdown format ")
+    gradio_parser.add_argument("-n", "--no_of_tests", type=int, default=10, help="No of Tests to run. Default 10")
+    gradio_parser.add_argument("-l", "--log_level", type=str, default="WARN", help="Log Levels - DEBUG, INFO, WARN, ERROR. Default: INFO")
+
+    gradio_parser.add_argument("--industry", type=str, choices=industries, help=f"Filter Prompts related to the industry.")
+    gradio_parser.add_argument("--threat-class", type=str, choices=threat_classes, help=f"Filter Prompts related to the threat classes.")
+    gradio_parser.add_argument("--threat-category", type=str, choices=threat_cats, help=f"filter prompts related to the threat categories.")
+    gradio_parser.add_argument("--deceptiveness", type=str, choices=["LOW", "MEDIUM", "HIGH"], help="How desceptive the promopts are?")
 
     args = parser.parse_args()
 
@@ -131,10 +148,13 @@ Human Assisted Testing of GenAI Apps and Models:
                 print("[Error]: It seems Playright is not install on this system. \n Run following command and try again: \n playright install")
             else:
                 raise ex
-    elif args.subcommand == 'models':
+    elif args.subcommand == 'gradio-rest-apis':
         # Code to scan models
         print("Scanning models...")
         # Placeholder for model scanning functionality
+        
+        
+        
     elif args.subcommand == 'mobileapp':
         input_markers = None
         if args.marker:
