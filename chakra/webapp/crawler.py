@@ -22,7 +22,8 @@ class HumanAssistedWebCrawler:
         loop.run_until_complete(task)
 
     def _handle_request(self, request):
-        logging.debug(f'>> {request.method} {request.url} \n')  
+        pass
+        # logging.debug(f'>> {request.method} {request.url} \n')  
         # if request.method in ["POST", "PUT"]:
         #     post_data = request.post_data
             # if post_data and self._fuzz_marker in post_data:

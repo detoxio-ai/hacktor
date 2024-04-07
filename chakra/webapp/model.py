@@ -198,7 +198,9 @@ class ModelResponseParser:
         Returns:
         - tuple: A tuple containing the parsed content and the extracted information.
         """
+        print("Location ", self._location)
         if type(response) in [str, int]:
+            print("Response is in str format ")
             a = str(response)
             # print(prompt)
             # print(a)
@@ -207,36 +209,48 @@ class ModelResponseParser:
             # print("Parsed str, dct and other reponse type")
             return a, b
         elif type(response) in [tuple, dict, list]:
-            return self._attemp_list_parsing(prompt, response)
+            print("Response is in tuple, dict, list format ")
+            content_text = str(response)
+            content_text_without_prompt = content_text.replace(prompt, "")
+            return content_text_without_prompt, self._attemp_list_parsing(prompt, response)
         else: 
             # print("Recieved reponse object, txt, json jsonl")
+            print("Response is in http reponse format ", self._content_type, self._location)
+            content_text = str(response.content)
+            content_text_without_prompt = content_text.replace(prompt, "")
             if self._content_type == "text":
-                return response.content, ""
+                return content_text_without_prompt, ""
             elif self._content_type == "json":
-                return response.content, self._attempt_json_parsing(response)
+                return content_text_without_prompt, self._attempt_json_parsing(prompt, response)
             elif self._content_type == "jsonl":
-                return response.content, self._attempt_jsonl_parsing(response)
+                return content_text_without_prompt, self._attempt_jsonl_parsing(prompt, response)
             else:
-                return response.content, ""
+                return content_text_without_prompt, ""
 
     def _attemp_list_parsing(self, prompt, response):
+        if not self._location:
+            return ""
         res = response
+        print("Locating the element from location : ", self._location)
         for i in self._location:
             res = res[i]
-        return response, res
+            print("res: ", res)
+        return res
 
-    def _attempt_json_parsing(self, response):
+    def _attempt_json_parsing(self, prompt, response):
         try:
             res_json = response.json()
             # TODO: Implemet Auto check for location if location = None
-            return res_json[self._location]
+            print(self._location)
+            return self._attemp_list_parsing(prompt, res_json)
+            # return str(res_json[self._location])
         except Exception as ex:
             logging.exception("Error while parsing json", ex)
         
         return ""
 
 
-    def _attempt_jsonl_parsing(self, res):
+    def _attempt_jsonl_parsing(self, prompt, res):
         """
         Attempt to parse the response as JSON.
 
@@ -251,9 +265,10 @@ class ModelResponseParser:
             lines = decoded_content.split("\n")
             for line in lines:
                 parsed_line = json.loads(line)
-                txt = parsed_line.get(self._location)
+                # txt = parsed_line.get(self._location)
+                txt = self._attemp_list_parsing(prompt, parsed_line)
                 if txt:
-                    return txt
+                    return str(txt)
         except Exception as ex:
             pass
             logging.exception("Error while parsing jsonl", ex)
@@ -281,8 +296,8 @@ class ModelResponseParserBuilder:
         _response_parser = ModelResponseParser()
 
         # Send some prompts to check if response has marker
-        texts = [f"Do you know about {_marker}? Can you tell something it?", 
-                f"Hello, {_marker}? How are you?"]
+        texts = [f"Your task is to repeat the word {_marker}, say  How are you?", 
+                 f"Do you know about {_marker}? Can you tell something it?",]
         for prompt in texts:
             res = _model._generate_raw(prompt)
             _response_parser = self._attempt_convert_res_2_parser(prompt, res, _marker)
@@ -315,11 +330,11 @@ class ModelResponseParserBuilder:
     #     logging.debug("_attempt_python_structure detection failed")
     #     return None
 
-    def _attempt_python_structure(self, prompt, res, marker):
+    def _attempt_python_structure(self, prompt, res, marker, content_type='array'):
         loc = self.__attempt_python_structure( prompt, res, marker)
         if loc:
-            # print("detected location ", loc)
-            _response_parser = ModelResponseParser("array", loc)
+            print("detected location ", loc)
+            _response_parser = ModelResponseParser(content_type, loc)
             logging.debug("Detected Reponse Structure: %s %s", "array", loc)
             return _response_parser
         else:
@@ -328,7 +343,7 @@ class ModelResponseParserBuilder:
         
 
     def __attempt_python_structure(self, prompt, res, marker, j=None):
-        # print("Checking ", res, marker, j)
+        print("Checking ", res, marker, j)
         loc = []
         if type(res) in [list, tuple]:
             for i, b in enumerate(res):
@@ -341,18 +356,18 @@ class ModelResponseParserBuilder:
                     break
         elif type(res) in [dict]:
             for k, v in res.items():
-                result = self.__attempt_python_structure(prompt, b, marker, i)
+                result = self.__attempt_python_structure(prompt, v, marker, k)
                 if result:
-                    # print(loc, result)
+                    print(loc, result)
                     if j is not None:
                         loc.append(j)
-                    loc.append(k)
+                    # loc.append(k)
                     loc.extend(result)  
                     break              
         else:
             res = str(res).replace(prompt, "")
-            if marker in str(res):
-                # print("marker found")
+            if marker in res or "sorry" in res or "understand" in res:
+                print("marker found")
                 if j is not None:
                     loc.append(j)
         return loc                   
@@ -362,10 +377,10 @@ class ModelResponseParserBuilder:
         res_json = self._attempt_json_parsing(res)
 
         if res_json:
-            loc = self._locate_marker_in_json(res_json, prompt, _marker)
-            if loc:
-                _response_parser = ModelResponseParser("json", loc)
-                logging.debug("Detected Reponse Structure: %s %s", "json", loc)
+            _response_parser = self._attempt_python_structure(prompt, res_json, _marker, content_type='json')
+            if _response_parser:
+                # _response_parser = ModelResponseParser("json", loc)
+                logging.debug("Detected Reponse Structure: %s %s", "json", _response_parser._location)
                 return _response_parser
         logging.debug("Reponse Json Parsing failed: %s", "json")
         return None
@@ -373,10 +388,10 @@ class ModelResponseParserBuilder:
     def _attempt_convert_jsonl_to_parser(self, prompt, res, _marker):
         json_lines = self._attempt_jsonl_parsing(res)
         for json_line in json_lines:
-            loc = self._locate_marker_in_json(json_line, prompt, _marker)
-            if loc:
-                _response_parser = ModelResponseParser("jsonl", loc)
-                logging.debug("Detected Reponse Structure: %s %s", "jsonl", loc)
+            _response_parser = self._attempt_python_structure(prompt, json_line, _marker, content_type='jsonl')
+            if _response_parser:
+                # _response_parser = ModelResponseParser("jsonl", loc)
+                logging.debug("Detected Reponse Structure: %s %s", "jsonl", _response_parser._location)
                 return _response_parser
         logging.debug("Reponse Jsonl Parsing failed: %s", "jsonl")
         return None
@@ -451,7 +466,10 @@ class ModelResponseParserBuilder:
         Returns:
         - str or None: The location of the marker within the response, or None if not found.
         """
+        print(res_json)
         for k, v in res_json.items():
-            if v != prompt and marker in str(v):
+            if v != prompt and (marker in str(v) or "sorry" in str(v)):
+                print(k)
                 return k
         return None 
+    
