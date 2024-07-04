@@ -192,6 +192,7 @@ class GenAIWebScanner:
                     logging.debug("Evaluation Executed...")
             except Exception as ex:
                 logging.exception(ex)
+                session.get_report()
                 raise ex
             return session.get_report()
     
