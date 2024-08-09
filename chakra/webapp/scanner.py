@@ -182,7 +182,7 @@ class GenAIWebScanner:
                     logging.debug("Generated Prompt: \n%s", prompt.data.content)
                     # Simulate model output
                     raw_output, parsed_output = model.generate(prompt.data.content)
-                    # print(raw_output, "==========================", parsed_output)
+                    logging.debug("Raw Output %s and Parsed Output %s \n", raw_output, parsed_output)
                     model_output_text = parsed_output if parsed_output else raw_output
                     logging.debug("Model Executed: \n%s", model_output_text)
                     # Evaluate the model interaction

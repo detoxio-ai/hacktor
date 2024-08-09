@@ -347,8 +347,10 @@ class BurpRequestParser:
         for line in request_lines[1:]:
             if line.split(': ')[0] == 'Host':
                 headers[line.split(': ')[0]] = line.split(': ')[1]
-
-        return RequestModel(method, base_url_path+url, headers, data, ctype)
+        
+        req = RequestModel(method, base_url_path+url, headers, data, ctype)
+        print(req.__dict__)
+        return req
 
 class BurpRequest2MobileAppRemoteModel:
     """A class to convert Burp Request to MobileAppRemoteModel instances."""

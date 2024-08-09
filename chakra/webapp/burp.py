@@ -41,7 +41,7 @@ class MobileAppRemoteModel:
         - tuple: A tuple containing the response content and possible model output, is parsing is successful otherwise empty.
         """
         res = self._generate_raw(input_text)
-        return self._response_parser.parse(res)
+        return self._response_parser.parse(input_text, res)
 
     def _generate_raw(self, input_text):
         """
