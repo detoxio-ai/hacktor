@@ -3,6 +3,7 @@ import select
 import tempfile
 import json
 import copy
+from io import StringIO  
 from tqdm import tqdm
 import logging
 from addict import Dict
@@ -15,12 +16,14 @@ import proto.dtx.services.prompts.v1.prompts_pb2 as dtx_prompts_pb2
 
 from google.protobuf import json_format
 import proto.dtx.services.prompts.v1.prompts_pb2 as prompts_pb2
+from chakra.workflow.scan import ScanWorkflow
 
 FUZZING_MARKERS = ["[[FUZZ]]", "[FUZZ]", "FUZZ", "<<FUZZ>>", "[[CHAKRA]]", "[CHAKRA]", "CHAKRA", "<<CHAKRA>>"]
 TEMPLATE_PROMPT = { "generatedAt": "2024-03-23T10:41:40.115447256Z", 
                     "data": {"content": ""}, 
                     "sourceLabels": {"domain": "ANY", "category": "ANY"}
                 }  
+
 
 
 class CrawlerOptions:
@@ -51,24 +54,29 @@ class ScannerOptions:
         self.output_field = output_field
         self.fuzz_markers = fuzz_markers or FUZZING_MARKERS
         self.skip_testing = skip_testing     
-        self.prompt_filter = prompt_filter   
+        self.prompt_filter:dtx_prompts_pb2.PromptGenerationFilterOption = prompt_filter   
 
 class GenAIWebScanner:
     rutils = GradioUtils()
-    def __init__(self, options:ScannerOptions):
+    def __init__(self, options:ScannerOptions, scan_workflow:ScanWorkflow):
         self.options = options
+        self.scan_workflow = scan_workflow
+        self.printer = scan_workflow.printer
     
     def scan(self, url, scanType=""):
+        self.scan_workflow.start()
         if scanType == "mobileapp":
             return self._scan_mobileapp(url)
         else:
             if self.rutils.is_gradio_endpoint(url):
+                self.scan_workflow.printer.info("Detected Gradio End Point")
                 return self._scan_gradio_app(url)
             else:
                 return self._scan_webapp(url)
     
     def _scan_gradio_app(self, url):
         # Create model
+        self.scan_workflow.to_crawling()
         api_name, predict_signature = self._detect_gradio_predict_api_signature(url)
         model = GradioAppModel(url, api_name, predict_signature, self.options.fuzz_markers)
         # Train model to learn reponse structure and how to extract answer
@@ -109,9 +117,11 @@ class GenAIWebScanner:
             Predict signature of remote gradio endpoint
         """
         try:
+            self.printer.info("Trying to detect endpoint Request / Response Schema via APIs Specs provided by Gradio")
             return self._detect_gradio_predict_api_signature_via_api_spec(url)
         except Exception as ex:
             logging.exception(ex)
+        self.printer.info("Trying to detect endpoint Request / Response Schema via Crawling the Gradio UI")
         return self._detect_gradio_predict_api_signature_via_crawling(url)
 
 
@@ -172,14 +182,22 @@ class GenAIWebScanner:
         #TODO: REMOVE API KEYYYYY
         api_key = ''
 
+        self.scan_workflow.to_planning()
+        
+        # self.printer.info(f"Generating prompt for Industry {self.options.prompt_filter.industry}")
+        
+        self.scan_workflow.to_scanning()
         scanner = DetoxioModelDynamicScanner(api_key=api_key)
         with scanner.new_session() as session:
             # Generate prompts
             logging.info("Initialized Session..")
             prompt_generator = self._generate_prompts(session)
             try:
-                for prompt in tqdm(prompt_generator, desc="Testing..."):
+                tqdm_output = StringIO("")
+                for i, prompt in enumerate(prompt_generator):
                     logging.debug("Generated Prompt: \n%s", prompt.data.content)
+                    self.printer.trace(tqdm_output.read())
+                    self.printer.trace(f"[{i+1}] Generated Prompt: {prompt.data.content[0:100]}...")
                     # Simulate model output
                     raw_output, parsed_output = model.generate(prompt.data.content)
                     logging.debug("Raw Output %s and Parsed Output %s \n", raw_output, parsed_output)
@@ -188,7 +206,7 @@ class GenAIWebScanner:
                     # Evaluate the model interaction
                     if len(model_output_text) > 2: # Make sure the output is not empty
                         evaluation_response = session.evaluate(prompt, model_output_text)
-                        logging.debug("Eveluation Reponse \n%s", evaluation_response)
+                        logging.debug("Evaluation Response \n%s", evaluation_response)
                     logging.debug("Evaluation Executed...")
             except Exception as ex:
                 logging.exception(ex)
@@ -247,12 +265,12 @@ class GenAIWebScanner:
             if prompt:
                 return prompt
             else:
-                logging.warn("Uknown format of input prompt json provided. Missing data.content field or prompt field in json")   
+                logging.warn("Unknown format of input prompt json provided. Missing data.content field or prompt field in json")   
         except Exception as ex:
             logging.debug("Error while converting prompt to json %s", ex)
             return self._parse_prompt_string_2_prompt(raw_prompt_str)
         
-        raise Exception("Uknown format of input prompt json provided. Missing data.content field or prompt field in json")
+        raise Exception("Unknown format of input prompt json provided. Missing data.content field or prompt field in json")
 
     def _parse_internal_dataset_prompt_format(self, raw_prompt):
         """

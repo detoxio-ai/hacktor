@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 from retry import retry
 from gradio_client import Client
 from .gradio import GradioUtils
+from chakra.utils.printer import BasePrinter
 
 class RequestModel:
     def __init__(self, method, url, headers, data, ctype):
@@ -115,7 +116,8 @@ class WebappRemoteModel:
 
 class GradioAppModel:
     rutils = GradioUtils()
-    def __init__(self, url, api_name, signature, fuzz_markers, prompt_prefix=""):
+    def __init__(self, url, api_name, signature, fuzz_markers, prompt_prefix="", 
+                 printer:BasePrinter=None):
         self._url = self.rutils.normalize_url(url)
         self._client = Client(self._url, verbose=False)
         self.api_name = api_name
@@ -123,6 +125,7 @@ class GradioAppModel:
         self._fuzz_markers = fuzz_markers
         self._prompt_prefix = prompt_prefix
         self._response_parser = ModelResponseParser()
+        self._printer = printer or BasePrinter()
     
     def generate(self, prompt):
         res =  self._generate_raw(prompt)
@@ -198,9 +201,9 @@ class ModelResponseParser:
         Returns:
         - tuple: A tuple containing the parsed content and the extracted information.
         """
-        print("Location ", self._location)
+        # print("Location ", self._location)
         if type(response) in [str, int]:
-            print("Response is in str format ")
+            # print("Response is in str format ")
             a = str(response)
             # print(prompt)
             # print(a)
@@ -209,13 +212,13 @@ class ModelResponseParser:
             # print("Parsed str, dct and other reponse type")
             return a, b
         elif type(response) in [tuple, dict, list]:
-            print("Response is in tuple, dict, list format ")
+            # print("Response is in tuple, dict, list format ")
             content_text = str(response)
             content_text_without_prompt = content_text.replace(prompt, "")
             return content_text_without_prompt, self._attemp_list_parsing(prompt, response)
         else: 
             # print("Recieved reponse object, txt, json jsonl")
-            print("Response is in http reponse format ", self._content_type, self._location)
+            # print("Response is in http reponse format ", self._content_type, self._location)
             content_text = str(response.content)
             content_text_without_prompt = content_text.replace(prompt, "")
             if self._content_type == "text":
@@ -231,17 +234,17 @@ class ModelResponseParser:
         if not self._location:
             return ""
         res = response
-        print("Locating the element from location : ", self._location)
+        # print("Locating the element from location : ", self._location)
         for i in self._location:
             res = res[i]
-            print("res: ", res)
+            # print("res: ", res)
         return res
 
     def _attempt_json_parsing(self, prompt, response):
         try:
             res_json = response.json()
             # TODO: Implemet Auto check for location if location = None
-            print(self._location)
+            # print(self._location)
             return self._attemp_list_parsing(prompt, res_json)
             # return str(res_json[self._location])
         except Exception as ex:
@@ -333,7 +336,7 @@ class ModelResponseParserBuilder:
     def _attempt_python_structure(self, prompt, res, marker, content_type='array'):
         loc = self.__attempt_python_structure( prompt, res, marker)
         if loc:
-            print("detected location ", loc)
+            # print("detected location ", loc)
             _response_parser = ModelResponseParser(content_type, loc)
             logging.debug("Detected Reponse Structure: %s %s", "array", loc)
             return _response_parser
@@ -343,7 +346,7 @@ class ModelResponseParserBuilder:
         
 
     def __attempt_python_structure(self, prompt, res, marker, j=None):
-        print("Checking ", res, marker, j)
+        # print("Checking ", res, marker, j)
         loc = []
         if type(res) in [list, tuple]:
             for i, b in enumerate(res):
@@ -358,7 +361,7 @@ class ModelResponseParserBuilder:
             for k, v in res.items():
                 result = self.__attempt_python_structure(prompt, v, marker, k)
                 if result:
-                    print(loc, result)
+                    # print(loc, result)
                     if j is not None:
                         loc.append(j)
                     # loc.append(k)
@@ -367,7 +370,7 @@ class ModelResponseParserBuilder:
         else:
             res = str(res).replace(prompt, "")
             if marker in res or "sorry" in res or "understand" in res:
-                print("marker found")
+                # print("marker found")
                 if j is not None:
                     loc.append(j)
         return loc                   
@@ -466,10 +469,10 @@ class ModelResponseParserBuilder:
         Returns:
         - str or None: The location of the marker within the response, or None if not found.
         """
-        print(res_json)
+        # print(res_json)
         for k, v in res_json.items():
             if v != prompt and (marker in str(v) or "sorry" in str(v)):
-                print(k)
+                # print(k)
                 return k
         return None 
     

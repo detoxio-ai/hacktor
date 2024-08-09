@@ -43,8 +43,8 @@ class DetoxioPromptResponseEvaluator(object):
         Returns:
             Evaluation response as a prompts_pb2.PromptEvaluationResponse object.
         """
-        print(model_output_text)
-        print(prompt)
+        # print(model_output_text)
+        # print(prompt)
         return self._evaluate_prompt_response(prompt, model_output_text)
 
     @retry(tries=5, delay=1, max_delay=60, backoff=5, logger=LOGGER)
@@ -61,7 +61,7 @@ class DetoxioPromptResponseEvaluator(object):
         """
         req = prompts_pb2.PromptEvaluationRequest()
         req.prompt.CopyFrom(prompt)
-        print(type(model_output_text))
+        # print(type(model_output_text))
         message = llm_pb2.LlmChatIo(content=model_output_text)
         response = prompts_pb2.PromptResponse(message=message)
         req.responses.extend([response])

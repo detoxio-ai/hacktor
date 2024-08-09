@@ -4,6 +4,9 @@ import logging
 from chakra.scanner import DetoxioGeneratorFilterBuilder
 from chakra.webapp.scanner import GenAIWebScanner, CrawlerOptions, ScannerOptions, FUZZING_MARKERS
 
+from chakra.utils.printer import Printer
+from chakra.workflow.scan import ScanWorkflow
+
 
 def setup_logging(args):
     log_level = getattr(args, 'log_level', 'WARN').upper()
@@ -124,6 +127,8 @@ Human Assisted Testing of GenAI Apps and Models:
     # Check if the program should run
     check_prerequisites(args)
 
+    printer = Printer(False, True)
+    scan_workflow = ScanWorkflow(printer)
 
     report = None
     if args.subcommand == 'webapps':
@@ -141,7 +146,7 @@ Human Assisted Testing of GenAI Apps and Models:
                                           no_of_tests=args.no_of_tests, 
                                           prompt_prefix=args.prompt_prefix,
                                           prompt_filter=prompt_filter_options)
-            scanner = GenAIWebScanner(scan_options)
+            scanner = GenAIWebScanner(scan_options, scan_workflow=scan_workflow)
             report = scanner.scan(args.url)
         except Exception as ex:
             if "playwright install" in str(ex):
@@ -150,10 +155,9 @@ Human Assisted Testing of GenAI Apps and Models:
                 raise ex
     elif args.subcommand == 'gradio-rest-apis':
         # Code to scan models
-        print("Scanning models...")
+        # print("Scanning models...")
         # Placeholder for model scanning functionality
-        
-        
+        pass
         
     elif args.subcommand == 'mobileapp':
         input_markers = None
