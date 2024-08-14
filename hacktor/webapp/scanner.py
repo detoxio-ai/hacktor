@@ -63,29 +63,29 @@ class GenAIWebScanner:
         self.scan_workflow = scan_workflow
         self.printer = scan_workflow.printer
     
-    def scan(self, url, scanType=""):
+    def scan(self, url, scanType="", use_ai=False):
         self.scan_workflow.start()
         if scanType == "mobileapp":
-            return self._scan_mobileapp(url)
+            return self._scan_mobileapp(url, use_ai=use_ai)
         else:
             if self.rutils.is_gradio_endpoint(url):
                 self.scan_workflow.printer.info("Detected Gradio End Point")
-                return self._scan_gradio_app(url)
+                return self._scan_gradio_app(url, use_ai=use_ai)
             else:
                 self.scan_workflow.printer.info("Detected Normal Web App")
-                return self._scan_webapp(url)
+                return self._scan_webapp(url, use_ai=use_ai)
     
-    def _scan_gradio_app(self, url):
+    def _scan_gradio_app(self, url, use_ai):
         # Create model
         self.scan_workflow.to_crawling()
         api_name, predict_signature = self._detect_gradio_predict_api_signature(url)
         model = GradioAppModel(url, api_name, predict_signature, self.options.fuzz_markers)
         # Train model to learn reponse structure and how to extract answer
         logging.debug("Learning model response structure")
-        model.prechecks()
+        model.prechecks(use_ai=use_ai)
         return self.__scan_model(model)
 
-    def _scan_webapp(self, url):
+    def _scan_webapp(self, url, use_ai):
         self.scan_workflow.to_crawling()
         session_file_path = self._crawl(url)
 
@@ -101,18 +101,18 @@ class GenAIWebScanner:
         for model in conv.convert():
             i += 1
             logging.info("Doing Prechecks..")
-            model.prechecks()
+            model.prechecks(use_ai=use_ai)
             return self.__scan_model(model)
         if i == 0:
             logging.warn("No requests found in session with Fuzzing Marker %s. Skipping testing..", )
 
-    def _scan_mobileapp(self, url):
+    def _scan_mobileapp(self, url, use_ai):
 
         logging.debug("Starting tests. Using Recorded Request to perform testing..")
         conv = BurpRequest2MobileAppRemoteModel(url, self.options.session_file_path, prompt_param=self.options.prompt_param, output_field=self.options.output_field)
         model = conv.convert()
         logging.info("Doing Prechecks..")
-        model.prechecks()
+        model.prechecks(use_ai=use_ai)
         return self.__scan_model(model)
 
     def _detect_gradio_predict_api_signature(self, url):
@@ -204,7 +204,9 @@ class GenAIWebScanner:
                     self.printer.trace(f"[{i+1}] Generated Prompt: {prompt.data.content[0:100]}...")
                     # Simulate model output
                     raw_output, parsed_output = model.generate(prompt.data.content)
-                    logging.debug("Raw Output %s and Parsed Output %s \n", raw_output, parsed_output)
+                    output = parsed_output or raw_output
+                    self.printer.trace(f"[{i+1}] Response: {output}...")
+                    logging.info("Raw Output %s and Parsed Output %s \n", raw_output, parsed_output)
                     model_output_text = parsed_output if parsed_output else raw_output
                     logging.debug("Model Executed: \n%s", model_output_text)
                     # Evaluate the model interaction

@@ -8,6 +8,7 @@ from retry import retry
 from gradio_client import Client
 from .gradio import GradioUtils
 from hacktor.utils.printer import BasePrinter
+from .ai import OpenAIResponseExtractor
 
 class RequestModel:
     def __init__(self, method, url, headers, data, ctype):
@@ -106,12 +107,12 @@ class WebappRemoteModel:
         """
         return self._prompt_prefix + text
 
-    def prechecks(self):
+    def prechecks(self, use_ai=False):
         """
             Perform prechecks to determine the location of the marker in the response.
         """
         mrpb = ModelResponseParserBuilder()
-        self._response_parser = mrpb.generate(self)
+        self._response_parser = mrpb.generate(self, use_ai=use_ai)
 
 
 class GradioAppModel:
@@ -131,12 +132,12 @@ class GradioAppModel:
         res =  self._generate_raw(prompt)
         return self._response_parser.parse(prompt, res)
     
-    def prechecks(self):
+    def prechecks(self, use_ai=False):
         """
         Perform prechecks to determine the location of the marker in the response.
         """
         mrpb = ModelResponseParserBuilder()
-        self._response_parser = mrpb.generate(self)
+        self._response_parser = mrpb.generate(self, use_ai=use_ai)
 
     def _generate_raw(self, orig_prompt):
         prompt = self._create_prompt(orig_prompt)
@@ -177,6 +178,30 @@ class GradioAppModel:
             arguements.append(value)
         return arguements
 
+class AIModelResponseParser:
+    
+    def __init__(self):
+        self.ai_parser = OpenAIResponseExtractor()
+    
+    def parse(self, prompt:str, raw_response:str):
+        """
+        Parse the response and extract relevant information.
+
+        Parameters:
+        - response: The response object to parse.
+
+        Returns:
+        - tuple: A tuple containing the parsed content and the extracted information.
+        """
+        content_text_without_prompt = str(raw_response).replace(prompt, "")
+        model_response = ""
+        try:
+            model_response = self.ai_parser.extract_response(prompt, raw_response)
+        except Exception as ex:
+            logging.warn("Error will using AI to extract response %s", ex)
+        return content_text_without_prompt, model_response
+        
+        
 class ModelResponseParser:
     """A class to parse model responses and extract relevant information."""
 
@@ -209,7 +234,7 @@ class ModelResponseParser:
             # print(a)
             b = a.replace(prompt, "")
             # print(b)
-            # print("Parsed str, dct and other reponse type")
+            # print("Parsed str, dct and other Response type")
             return a, b
         elif type(response) in [tuple, dict, list]:
             # print("Response is in tuple, dict, list format ")
@@ -217,8 +242,8 @@ class ModelResponseParser:
             content_text_without_prompt = content_text.replace(prompt, "")
             return content_text_without_prompt, self._attemp_list_parsing(prompt, response)
         else: 
-            # print("Recieved reponse object, txt, json jsonl")
-            # print("Response is in http reponse format ", self._content_type, self._location)
+            # print("Recieved Response object, txt, json jsonl")
+            # print("Response is in http Response format ", self._content_type, self._location)
             content_text = str(response.content)
             content_text_without_prompt = content_text.replace(prompt, "")
             if self._content_type == "text":
@@ -285,7 +310,7 @@ class ModelResponseParserBuilder:
     def __init__(self):
         pass
     
-    def generate(self, _model):
+    def generate(self, _model, use_ai=False):
         """
          Generate ModelResponseParser to parse model output and locate the answer.
 
@@ -296,16 +321,19 @@ class ModelResponseParserBuilder:
          - ModelResponseParser: ModelResponseParser with type 'json', 'jsonl' or 'text'
         """
         _marker = self._random_string(12)
-        _response_parser = ModelResponseParser()
+        if use_ai:
+            _response_parser = AIModelResponseParser()
+        else:
+            _response_parser = ModelResponseParser()
 
-        # Send some prompts to check if response has marker
-        texts = [f"Your task is to repeat the word {_marker}, say  How are you?", 
-                 f"Do you know about {_marker}? Can you tell something it?",]
-        for prompt in texts:
-            res = _model._generate_raw(prompt)
-            _response_parser = self._attempt_convert_res_2_parser(prompt, res, _marker)
-            if _response_parser:
-                break
+            # Send some prompts to check if response has marker
+            texts = [f"Your task is to repeat the word {_marker}, say  How are you?", 
+                    f"Do you know about {_marker}? Can you tell something it?",]
+            for prompt in texts:
+                res = _model._generate_raw(prompt)
+                _response_parser = self._attempt_convert_res_2_parser(prompt, res, _marker)
+                if _response_parser:
+                    break
 
         return _response_parser
 
@@ -320,7 +348,6 @@ class ModelResponseParserBuilder:
             parser = method(prompt, res, _marker)
             if parser:
                 return parser
-        # Return default 
         return ModelResponseParser()
                   
                   
@@ -338,10 +365,10 @@ class ModelResponseParserBuilder:
         if loc:
             # print("detected location ", loc)
             _response_parser = ModelResponseParser(content_type, loc)
-            logging.debug("Detected Reponse Structure: %s %s", "array", loc)
+            logging.debug("Detected Response Structure: %s %s", "array", loc)
             return _response_parser
         else:
-            logging.debug("Reponse Json Parsing failed: %s", "array")
+            logging.debug("Response Json Parsing failed: %s", "array")
             return None
         
 
@@ -383,9 +410,9 @@ class ModelResponseParserBuilder:
             _response_parser = self._attempt_python_structure(prompt, res_json, _marker, content_type='json')
             if _response_parser:
                 # _response_parser = ModelResponseParser("json", loc)
-                logging.debug("Detected Reponse Structure: %s %s", "json", _response_parser._location)
+                logging.debug("Detected Response Structure: %s %s", "json", _response_parser._location)
                 return _response_parser
-        logging.debug("Reponse Json Parsing failed: %s", "json")
+        logging.debug("Response Json Parsing failed: %s", "json")
         return None
 
     def _attempt_convert_jsonl_to_parser(self, prompt, res, _marker):
@@ -394,9 +421,9 @@ class ModelResponseParserBuilder:
             _response_parser = self._attempt_python_structure(prompt, json_line, _marker, content_type='jsonl')
             if _response_parser:
                 # _response_parser = ModelResponseParser("jsonl", loc)
-                logging.debug("Detected Reponse Structure: %s %s", "jsonl", _response_parser._location)
+                logging.debug("Detected Response Structure: %s %s", "jsonl", _response_parser._location)
                 return _response_parser
-        logging.debug("Reponse Jsonl Parsing failed: %s", "jsonl")
+        logging.debug("Response Jsonl Parsing failed: %s", "jsonl")
         return None
 
     def _random_string(self, length):

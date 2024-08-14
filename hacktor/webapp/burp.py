@@ -97,9 +97,9 @@ class MobileAppRemoteModel:
         """
         return self._prompt_prefix + text
 
-    def prechecks(self):
+    def prechecks(self, use_ai=False):
         """
             Perform prechecks to determine the location of the marker in the response.
         """
         mrpb = ModelResponseParserBuilder()
-        self._response_parser = mrpb.generate(self)
+        self._response_parser = mrpb.generate(self, use_ai=use_ai)

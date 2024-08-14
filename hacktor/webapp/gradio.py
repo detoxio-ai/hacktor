@@ -34,7 +34,6 @@ class GradioUtils:
                         else:
                             dv = 0
                     parameters.append(dv)
-                            
             return api_name, parameters
         except Exception as ex:
             logging.exception(ex)

@@ -63,6 +63,7 @@ Human Assisted Testing of GenAI Apps and Models:
     webapps_parser.add_argument("--skip_crawling", action="store_true", help="Skip crawling, use recorded session to test")
     webapps_parser.add_argument("--skip_testing", action="store_true", help="Skill Testing, possibly just record session")
     webapps_parser.add_argument("--save_session", action="store_true", help="Save Crawling Session for next time")
+    webapps_parser.add_argument("--use_ai", action="store_true", help="Use AI to perform parsing and crawling, if applicable")
     webapps_parser.add_argument("--prompt_prefix", type=str, default="", help="Add a prefix to every prompt to make prompts more contextual")
     webapps_parser.add_argument("-m", "--speed", type=int, default=300, help="set time in milliseconds for executions of APIs.")
     webapps_parser.add_argument("-b", "--browser", type=str, help="Browser type to run playwright automation on. Allowed values are Webkit, Firefox and Chromium.")
@@ -92,6 +93,7 @@ Human Assisted Testing of GenAI Apps and Models:
     mobileapps_parser.add_argument("--response_param", type=str, help="Parameter which holds the GenAI response.")
     mobileapps_parser.add_argument("--marker", type=str, default="", help=f"FUZZ marker. By Default, the tool will detect any of these markers: {' '.join(FUZZING_MARKERS)}")
 
+    mobileapps_parser.add_argument("--use_ai", action="store_true", help="Use AI to perform parsing and crawling, if applicable")
     mobileapps_parser.add_argument("--industry", type=str, choices=industries, help=f"Filter Prompts related to the industry.")
     mobileapps_parser.add_argument("--threat-class", type=str, choices=threat_classes, help=f"Filter Prompts related to the threat classes.")
     mobileapps_parser.add_argument("--threat-category", type=str, choices=threat_cats, help=f"filter prompts related to the threat categories.")
@@ -109,7 +111,8 @@ Human Assisted Testing of GenAI Apps and Models:
     gradio_parser.add_argument("-s", "--session", type=str, help="Path to session file for storing crawl results")
     gradio_parser.add_argument("--prompt_prefix", type=str, default="", help="Add a prefix to every prompt to make prompts more contextual")
     gradio_parser.add_argument("--api-name", type=str, default="", help="API name to test. By Default, predict the API.")
-    
+    gradio_parser.add_argument("--use_ai", action="store_true", help="Use AI to perform parsing and crawling, if applicable")
+
     # Common Options
     gradio_parser.add_argument("--json", type=str, help="Path to store the report of scanning in json format")
     gradio_parser.add_argument("--markdown", type=str, help="Path to store the report of scanning in markdown format ")
@@ -122,6 +125,8 @@ Human Assisted Testing of GenAI Apps and Models:
     gradio_parser.add_argument("--deceptiveness", type=str, choices=["LOW", "MEDIUM", "HIGH"], help="How desceptive the promopts are?")
 
     args = parser.parse_args()
+    
+    print("Using AI ", args.use_ai)
 
     setup_logging(args)
     # Check if the program should run
@@ -147,7 +152,7 @@ Human Assisted Testing of GenAI Apps and Models:
                                           prompt_prefix=args.prompt_prefix,
                                           prompt_filter=prompt_filter_options)
             scanner = GenAIWebScanner(scan_options, scan_workflow=scan_workflow)
-            report = scanner.scan(args.url)
+            report = scanner.scan(args.url, use_ai=args.use_ai)
         except Exception as ex:
             if "playwright install" in str(ex):
                 print("[Error]: It seems Playright is not install on this system. \n Run following command and try again: \n playright install")
@@ -176,7 +181,7 @@ Human Assisted Testing of GenAI Apps and Models:
                                         prompt_param=args.prompt_parameter or input_markers,
                                         prompt_filter=prompt_filter_options)
             scanner = GenAIWebScanner(scan_options)
-            report = scanner.scan(args.url, scanType="mobileapp")
+            report = scanner.scan(args.url, scanType="mobileapp", use_ai=args.use_ai)
         except Exception as ex:
             raise ex
     else:
