@@ -75,9 +75,9 @@ Human Assisted Testing of GenAI Apps and Models:
     webapps_parser.add_argument("--marker", type=str, default="", help=f"FUZZ marker. By Default, the tool will detect any of these markers: {' '.join(FUZZING_MARKERS)}")
 
     webapps_parser.add_argument("--industry", type=str, choices=industries, help=f"Filter Prompts related to the industry.")
-    webapps_parser.add_argument("--threat-class", type=str, choices=threat_classes, help=f"Filter Prompts related to the threat classes.")
-    webapps_parser.add_argument("--threat-category", type=str, choices=threat_cats, help=f"filter prompts related to the threat categories.")
-    webapps_parser.add_argument("--deceptiveness", type=str, choices=["LOW", "MEDIUM", "HIGH"], help="How desceptive the promopts are?")
+    webapps_parser.add_argument("--threat-class", type=str,  choices=threat_classes, help=f"Filter Prompts related to the threat classes.")
+    webapps_parser.add_argument("--threat-category", type=str,  choices=threat_cats, help=f"filter prompts related to the threat categories.")
+    webapps_parser.add_argument("--deceptiveness", type=str,  choices=["LOW", "MEDIUM", "HIGH"], help="How desceptive the promopts are?")
 
     # Subparser for scanning models
     # models_parser = subparsers.add_parser('models', help='Scan models')

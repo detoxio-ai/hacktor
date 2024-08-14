@@ -72,6 +72,7 @@ class GenAIWebScanner:
                 self.scan_workflow.printer.info("Detected Gradio End Point")
                 return self._scan_gradio_app(url)
             else:
+                self.scan_workflow.printer.info("Detected Normal Web App")
                 return self._scan_webapp(url)
     
     def _scan_gradio_app(self, url):
@@ -85,9 +86,11 @@ class GenAIWebScanner:
         return self.__scan_model(model)
 
     def _scan_webapp(self, url):
+        self.scan_workflow.to_crawling()
         session_file_path = self._crawl(url)
 
         if self.options.skip_testing:
+            self.printer.warn("Testing is skipped as per user option provided")
             return None
 
         logging.debug("Tests will start soon. Using Recorded Session to perform testing..")
@@ -171,10 +174,12 @@ class GenAIWebScanner:
 
             logging.debug("Starting Browser to record session from User...")
             logging.warn("Starting Human Assisted Crawler. The system will wait for user to record session. Close the Browser to start scanning")
+            self.printer.info("Starting Browser: Human Assisted Detection of GenAI APIs..")
             crawler = HumanAssistedWebCrawler(headless=self.options.crawler_options.headless, 
                                                 speed=self.options.crawler_options.speed, 
                                                 browser_name=self.options.crawler_options.browser_name)
             crawler.crawl(url, session_file_path=session_file_path, handle_request_fn=intercept_request_hook)
+            self.printer.info("Completed Crawling...")
         return session_file_path
 
     def __scan_model(self, model):
@@ -188,15 +193,14 @@ class GenAIWebScanner:
         
         self.scan_workflow.to_scanning()
         scanner = DetoxioModelDynamicScanner(api_key=api_key)
+        unsafe_results_found=0
         with scanner.new_session() as session:
             # Generate prompts
             logging.info("Initialized Session..")
             prompt_generator = self._generate_prompts(session)
             try:
-                tqdm_output = StringIO("")
                 for i, prompt in enumerate(prompt_generator):
                     logging.debug("Generated Prompt: \n%s", prompt.data.content)
-                    self.printer.trace(tqdm_output.read())
                     self.printer.trace(f"[{i+1}] Generated Prompt: {prompt.data.content[0:100]}...")
                     # Simulate model output
                     raw_output, parsed_output = model.generate(prompt.data.content)
@@ -207,12 +211,17 @@ class GenAIWebScanner:
                     if len(model_output_text) > 2: # Make sure the output is not empty
                         evaluation_response = session.evaluate(prompt, model_output_text)
                         logging.debug("Evaluation Response \n%s", evaluation_response)
+                    if session.get_report().count_unsafe_results() > unsafe_results_found:
+                        unsafe_results_found = session.get_report().count_unsafe_results()
+                        self.printer.critical(f"Total Unsafe Responses {unsafe_results_found}")
                     logging.debug("Evaluation Executed...")
             except Exception as ex:
                 logging.exception(ex)
                 session.get_report()
                 raise ex
-            return session.get_report()
+            self.scan_workflow.to_reporting()
+            report = session.get_report()
+            self.scan_workflow.to_finishing()
     
     def _generate_prompts(self, scanner_session):
         """

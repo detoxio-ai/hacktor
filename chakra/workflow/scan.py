@@ -12,7 +12,7 @@ class ScanWorkflow:
         self.printer = printer
 
         # Define the phases (states)
-        states = ['Detection', 'Crawling', 'Planning', 'Scanning', 'Reporting']
+        states = ['Detection', 'Crawling', 'Planning', 'Scanning', 'Reporting', "Finishing"]
 
         # Initialize the state machine
         self.machine = Machine(model=self, states=states, initial='Detection')
@@ -22,6 +22,9 @@ class ScanWorkflow:
         self.machine.add_transition('to_planning', 'Crawling', 'Planning', before=self.before_transition, after=self.on_transition)
         self.machine.add_transition('to_scanning', 'Planning', 'Scanning', before=self.before_transition, after=self.on_transition)
         self.machine.add_transition('to_reporting', 'Scanning', 'Reporting', before=self.before_transition, after=self.on_transition)
+        self.machine.add_transition('to_reporting', 'Scanning', 'Reporting', before=self.before_transition, after=self.on_transition)
+        self.machine.add_transition('to_Finishing', 'Finishing', 'Reporting', before=self.before_transition, after=self.on_transition)
+
         
         # Transitions for moving back if needed
         self.machine.add_transition('to_detection', 'Crawling', 'Detection', before=self.before_transition, after=self.on_transition)

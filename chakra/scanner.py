@@ -23,6 +23,12 @@ from .parser import DetoxioEvaluationResponseParser, DetoxioResponseEvaluationRe
 class DetoxioGeneratorFilterBuilder:
     def __init__(self):
         self._filter = dtx_prompts_pb2.PromptGenerationFilterOption()
+        self._industries:str = "All"
+        self._threat_classes:str = "All"
+        self._threat_categories:str = "All"
+        self._deceptiveness = "Low"
+
+
     
     @classmethod
     def get_threat_classes(self):
@@ -52,7 +58,7 @@ class DetoxioGeneratorFilterBuilder:
     
     def _get_industry(self, ind:str) -> int:
         if not ind:
-            return self
+            return 0
         for tc, v in dtx_industry_pb2.IndustryDomain.items():
             if ind.lower() in tc.lower():
                 return v
@@ -62,18 +68,21 @@ class DetoxioGeneratorFilterBuilder:
         if not tc:
             return self
         self._filter.threat_class = self._get_threat_class(tc)
+        self._threat_classes=tc
         return self
 
     def threat_category(self, cat:str):
         if not cat:
             return self
         self._filter.threat_category = self._get_threat_category(cat)
+        self._threat_categories=cat
         return self
 
     def industry(self, ind:str):
         if not ind:
             return self
         self._filter.industry = self._get_industry(ind)
+        self._industries = ind
         return self
 
     def label(self, key:str, value:str):
@@ -87,6 +96,7 @@ class DetoxioGeneratorFilterBuilder:
         if not value or value.lower() not in possible_values:
             raise ValueError(f"Unknown deceptiveness {','.join(possible_values)}")
         self.label("deceptiveness", value.lower())
+        self._deceptiveness=value
         return self
 
     def build_filter(self):
