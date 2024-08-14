@@ -6,7 +6,7 @@ from .burp import MobileAppRemoteModel
 
 #from model import WebappRemoteModel, RequestModel, MobileAppRemoteModel
 
-FUZZING_MARKERS = ["[[FUZZ]]", "[FUZZ]", "FUZZ", "<<FUZZ>>", "[[HECTOR]]", "[HECTOR]", "HECTOR", "<<HECTOR>>"]
+FUZZING_MARKERS = ["[[FUZZ]]", "[FUZZ]", "FUZZ", "<<FUZZ>>", "[[HACKTOR]]", "[HACKTOR]", "HACKTOR", "<<HACKTOR>>"]
 
 class URLManipulator:
     """A class to manipulate URLs by replacing query parameters containing a specific marker."""

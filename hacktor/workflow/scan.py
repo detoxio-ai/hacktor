@@ -1,6 +1,6 @@
 from transitions import Machine
 
-from hector.utils.printer import BasePrinter
+from hacktor.utils.printer import BasePrinter
 
 class ScanWorkflow:
     def __init__(self, printer:BasePrinter):
