@@ -1,11 +1,11 @@
 import os
 import argparse
 import logging
-from hector.scanner import DetoxioGeneratorFilterBuilder
-from hector.webapp.scanner import GenAIWebScanner, CrawlerOptions, ScannerOptions, FUZZING_MARKERS
+from hacktor.scanner import DetoxioGeneratorFilterBuilder
+from hacktor.webapp.scanner import GenAIWebScanner, CrawlerOptions, ScannerOptions, FUZZING_MARKERS
 
-from hector.utils.printer import Printer
-from hector.workflow.scan import ScanWorkflow
+from hacktor.utils.printer import Printer
+from hacktor.workflow.scan import ScanWorkflow
 
 
 def setup_logging(args):
@@ -36,9 +36,9 @@ def main():
         description="""
 Human Assisted Testing of GenAI Apps and Models: 
 
-[1] python hector/main.py webapps <<GenAI APP URL>>
+[1] python hacktor/main.py webapps <<GenAI APP URL>>
 
-[2] Browser window will open, type [FUZZ] or [CHAKRA] in a text area to be used for testing
+[2] Browser window will open, type [FUZZ] or [HACKTOR] in a text area to be used for testing
 
 [3] Once recording is done, close the browser
 
@@ -105,7 +105,7 @@ Human Assisted Testing of GenAI Apps and Models:
 
     # Subparser for Gradio Rest Endpoints
     gradio_parser = subparsers.add_parser('gradio-rest-apis', help='Scan Gradio Rest APIs')
-    gradio_parser.add_argument("url", type=str, help="Starting URL for crawling. Ex: safedepdev/Pokebot or https://huggingface.co/spaces/safedepdev/Pokebot")
+    gradio_parser.add_argument("url", type=str, help="Starting URL for crawling. Ex: detoxiodev/Pokebot or https://huggingface.co/spaces/detoxiodev/Pokebot")
     gradio_parser.add_argument("-s", "--session", type=str, help="Path to session file for storing crawl results")
     gradio_parser.add_argument("--prompt_prefix", type=str, default="", help="Add a prefix to every prompt to make prompts more contextual")
     gradio_parser.add_argument("--api-name", type=str, default="", help="API name to test. By Default, predict the API.")

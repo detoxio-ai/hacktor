@@ -1,8 +1,8 @@
-# Chakra
+# Hacktor
 
 ## Why does it exist?
 
-Chakra is a versatile tool for:
+Hacktor is a versatile tool for:
 
 - **Web App Pentesters & Security Engineers**: Security test GenAI Chatbots, Assistants, and Agents.
 - **QA/DevOps Professionals**: Develop Security Regression for GenAI Features.
@@ -16,17 +16,17 @@ Refer to Features and Use Case Section for more details
 
 ## Getting Started
 
-**Clone and install Chakra**
+**Clone and install Hacktor**
 
 ```bash
-git clone https://github.com/safedep/hector.git
-cd hector 
+git clone https://github.com/detoxio/hacktor.git
+cd hacktor 
 poetry install
 ```
 
 **Install using pip**
 ```bash
-pip install hector@git+https://github.com/safedep/hector@main \
+pip install hacktor@git+https://github.com/detoxio/hacktor@main \
     detoxio-api-protocolbuffers-python detoxio_api_grpc_python  \
     --upgrade --extra-index-url https://buf.build/gen/python
 ```
@@ -41,7 +41,7 @@ playwright install
 
 Install it as a dependency using pip
 ```bash
-pip install hector@git+https://github.com/safedep/hector detoxio-api-protocolbuffers-python detoxio_api_grpc_python   --upgrade --extra-index-url https://buf.build/gen/python
+pip install hacktor@git+https://github.com/detoxio/hacktor detoxio-api-protocolbuffers-python detoxio_api_grpc_python   --upgrade --extra-index-url https://buf.build/gen/python
 ```
 
 ## Usage
@@ -49,8 +49,8 @@ pip install hector@git+https://github.com/safedep/hector detoxio-api-protocolbuf
 ### As GenAI App Scanner
 
 It works as follows: 
-1. Run `python hector/main.py webapps <>` to start crawling web applications.
-2. Open a browser window and insert `[FUZZ]` or `[CHAKRA]` in relevant text areas.
+1. Run `python hacktor/main.py webapps <>` to start crawling web applications.
+2. Open a browser window and insert `[FUZZ]` or `[HACKTOR]` in relevant text areas.
 3. Close the browser after recording interactions.
 4. Tool automatically fuzzes requests using recorded prompts.
 5. Generate report summarizing fuzzing results.
@@ -66,30 +66,30 @@ export DETOXIO_API_KEY=xxxx
 
 Run it
 ```bash
-poetry run hector webapps <URL>
+poetry run hacktor webapps <URL>
 ```
 
 **Record a Crawling Session**
 ```bash
-hector webapps <URL> -s session.har --skip_testing
+hacktor webapps <URL> -s session.har --skip_testing
 cat session.har | grep [FUZZ] | wc -l  
 ```
 The above command will open the browser. Specify the Fuzzing Marker [FUZZ] in a chat box. Close the browser window to save the session 
 
 **Just Test using Recorded Session**
 ```bash
-hector webapps <URL> -s session.har --skip_crawling --markdown report.md --json report.json
+hacktor webapps <URL> -s session.har --skip_crawling --markdown report.md --json report.json
 ```
 No Browser will open. Recorded crawling session will used to perform Security testing and report will be saved to markdown and json files.
 
 **Specify filters to generate prompts specific to industry or threat class**
 
 ```bash
-hector webapps https://69c207a7e69699ce8e.gradio.live/ -s demo.har --skip_crawling --json report.json --threat-class bypass --markdown report.md
+hacktor webapps https://69c207a7e69699ce8e.gradio.live/ -s demo.har --skip_crawling --json report.json --threat-class bypass --markdown report.md
 ```
 
 ```bash
-hector webapps https://69c207a7e69699ce8e.gradio.live/ -s demo.har --skip_crawling --industry healthcare --json report.json --threat-class bypass
+hacktor webapps https://69c207a7e69699ce8e.gradio.live/ -s demo.har --skip_crawling --industry healthcare --json report.json --threat-class bypass
 
 ```
 
@@ -116,7 +116,7 @@ options:
   -l LOG_LEVEL, --log_level LOG_LEVEL
                         Path to session file for storing crawl results
   --marker MARKER       FUZZ marker. By Default, the tool will detect any of these markers: [[FUZZ]] [FUZZ] FUZZ <<FUZZ>>
-                        [[CHAKRA]] [CHAKRA] CHAKRA <<CHAKRA>>
+                        [[HACKTOR]] [HACKTOR] HACKTOR <<HACKTOR>>
 
   --industry {HEALTHCARE,FINANCE,RETAIL,AGRICULTURE,AUTOMOTIVE,BANKING,BIOTECHNOLOGY,CHEMICALS,CONSTRUCTION ...}
                         Filter Prompts related to the industry.
@@ -134,9 +134,9 @@ options:
 It works as follows: 
 1. Use Burpsuite in tandum with Andoird emulator to intercept request made to GenAI application
 2. Save this request to a file
-3. Run `python hector/main.py mobileapp <>` to start testing.
+3. Run `python hacktor/main.py mobileapp <>` to start testing.
 4. Tool automatically fuzzes requests using recorded prompt. In order to fuzz either:
-    * Replace the input prompt with `[FUZZ]` OR `[CHAKRA]`
+    * Replace the input prompt with `[FUZZ]` OR `[HACKTOR]`
     * Provide a prompt paramtere which is the parameter in the request that maps to the input prompt
 5. Generate report summarizing fuzzing results.
 6. Report can be printed to console or saved for further analysis.
@@ -151,7 +151,7 @@ export DETOXIO_API_KEY=xxxx
 
 Run it
 ```bash
-poetry run hector mobileapp <URL> -r <Request file path>
+poetry run hacktor mobileapp <URL> -r <Request file path>
 ```
 
 **Other Options**
@@ -181,7 +181,7 @@ options:
 
 # Assuming you have already imported the necessary modules and classes
 
-from hector.scanner import DetoxioModelDynamicScanner
+from hacktor.scanner import DetoxioModelDynamicScanner
 
 def example_usage():
     # Provide your API key or set it as an environment variable
@@ -210,18 +210,18 @@ if __name__ == "__main__":
 
 ## Use Cases
 
-**Red Teaming GenAI Chatbots**:  Craft toxic prompts to test the resilience of your GenAI chatbots against adversarial attacks. Chakra aids in evaluating your chatbot's ability to handle unexpected or malicious inputs.
+**Red Teaming GenAI Chatbots**:  Craft toxic prompts to test the resilience of your GenAI chatbots against adversarial attacks. Hacktor aids in evaluating your chatbot's ability to handle unexpected or malicious inputs.
 
-**Mobile GenAI App Security Testing**:  Fortify the security of your GenAI mobile apps.  By combining Chakra with Burp, a suite of web security testing tools, you can:
+**Mobile GenAI App Security Testing**:  Fortify the security of your GenAI mobile apps.  By combining Hacktor with Burp, a suite of web security testing tools, you can:
 
 Decompile the mobile app to understand its inner workings.
 Record requests and responses using Burp to capture the app's interactions.
-Test the captured APIs using Chakra to identify potential vulnerabilities.
+Test the captured APIs using Hacktor to identify potential vulnerabilities.
 
-**CI/CD Integration for GenAI Testing**:  Streamline GenAI security testing into your CI/CD pipeline, ensuring continuous security throughout the development lifecycle. Chakra integrates with Playwright, a popular automation framework, to:
+**CI/CD Integration for GenAI Testing**:  Streamline GenAI security testing into your CI/CD pipeline, ensuring continuous security throughout the development lifecycle. Hacktor integrates with Playwright, a popular automation framework, to:
 
 Record user sessions within the GenAI application.
-Automatically execute Chakra tests based on the recorded sessions during the CI/CD process.
+Automatically execute Hacktor tests based on the recorded sessions during the CI/CD process.
 
 ## Features 
 
@@ -261,13 +261,13 @@ We are using [Playwrite](https://playwright.dev/) to record Crawled data
 
 **Clone**
 ```bash
-git clone https://github.com/safedep/hector
+git clone https://github.com/detoxio/hacktor
 ```
 
 **Install Dependencies**
 ```bash
 pip install poetry
-cd hector
+cd hacktor
 poetry install
 ```
 
@@ -276,7 +276,7 @@ poetry install
 **Run it**
 
 ```bash 
-poetry run hector
+poetry run hacktor
 ```
 [DO NOT FORGET TO SET Detoxio AI API key]
 

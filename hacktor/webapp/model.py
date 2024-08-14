@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from retry import retry
 from gradio_client import Client
 from .gradio import GradioUtils
-from hector.utils.printer import BasePrinter
+from hacktor.utils.printer import BasePrinter
 
 class RequestModel:
     def __init__(self, method, url, headers, data, ctype):
