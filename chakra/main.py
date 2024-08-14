@@ -1,11 +1,11 @@
 import os
 import argparse
 import logging
-from chakra.scanner import DetoxioGeneratorFilterBuilder
-from chakra.webapp.scanner import GenAIWebScanner, CrawlerOptions, ScannerOptions, FUZZING_MARKERS
+from hector.scanner import DetoxioGeneratorFilterBuilder
+from hector.webapp.scanner import GenAIWebScanner, CrawlerOptions, ScannerOptions, FUZZING_MARKERS
 
-from chakra.utils.printer import Printer
-from chakra.workflow.scan import ScanWorkflow
+from hector.utils.printer import Printer
+from hector.workflow.scan import ScanWorkflow
 
 
 def setup_logging(args):
@@ -36,7 +36,7 @@ def main():
         description="""
 Human Assisted Testing of GenAI Apps and Models: 
 
-[1] python chakra/main.py webapps <<GenAI APP URL>>
+[1] python hector/main.py webapps <<GenAI APP URL>>
 
 [2] Browser window will open, type [FUZZ] or [CHAKRA] in a text area to be used for testing
 

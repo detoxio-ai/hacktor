@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "chakra"
+name = "hector"
 version = "0.1.0"
 description = "LLM models Red Teaming Utility Package"
 authors = ["jchauhan <jitendra@detoxio.ai>"]
@@ -54,4 +54,4 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-chakra = "chakra.main:main"
+hector = "hector.main:main"

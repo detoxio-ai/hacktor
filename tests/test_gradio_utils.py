@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch
-from chakra.webapp.gradio import GradioUtils
+from hector.webapp.gradio import GradioUtils
 
 @pytest.fixture
 def gradio_utils():

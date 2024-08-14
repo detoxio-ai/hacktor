@@ -7,16 +7,16 @@ from io import StringIO
 from tqdm import tqdm
 import logging
 from addict import Dict
-from chakra.webapp.har import Har2WebappRemoteModel, BurpRequest2MobileAppRemoteModel
-from chakra.webapp.crawler import HumanAssistedWebCrawler
-from chakra.scanner import DetoxioModelDynamicScanner
+from hector.webapp.har import Har2WebappRemoteModel, BurpRequest2MobileAppRemoteModel
+from hector.webapp.crawler import HumanAssistedWebCrawler
+from hector.scanner import DetoxioModelDynamicScanner
 from .model import GradioAppModel
 from .gradio import GradioUtils
 import proto.dtx.services.prompts.v1.prompts_pb2 as dtx_prompts_pb2
 
 from google.protobuf import json_format
 import proto.dtx.services.prompts.v1.prompts_pb2 as prompts_pb2
-from chakra.workflow.scan import ScanWorkflow
+from hector.workflow.scan import ScanWorkflow
 
 FUZZING_MARKERS = ["[[FUZZ]]", "[FUZZ]", "FUZZ", "<<FUZZ>>", "[[CHAKRA]]", "[CHAKRA]", "CHAKRA", "<<CHAKRA>>"]
 TEMPLATE_PROMPT = { "generatedAt": "2024-03-23T10:41:40.115447256Z", 

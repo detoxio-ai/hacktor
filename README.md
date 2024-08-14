@@ -19,14 +19,14 @@ Refer to Features and Use Case Section for more details
 **Clone and install Chakra**
 
 ```bash
-git clone https://github.com/safedep/chakra.git
-cd chakra 
+git clone https://github.com/safedep/hector.git
+cd hector 
 poetry install
 ```
 
 **Install using pip**
 ```bash
-pip install chakra@git+https://github.com/safedep/chakra@main \
+pip install hector@git+https://github.com/safedep/hector@main \
     detoxio-api-protocolbuffers-python detoxio_api_grpc_python  \
     --upgrade --extra-index-url https://buf.build/gen/python
 ```
@@ -41,7 +41,7 @@ playwright install
 
 Install it as a dependency using pip
 ```bash
-pip install chakra@git+https://github.com/safedep/chakra detoxio-api-protocolbuffers-python detoxio_api_grpc_python   --upgrade --extra-index-url https://buf.build/gen/python
+pip install hector@git+https://github.com/safedep/hector detoxio-api-protocolbuffers-python detoxio_api_grpc_python   --upgrade --extra-index-url https://buf.build/gen/python
 ```
 
 ## Usage
@@ -49,7 +49,7 @@ pip install chakra@git+https://github.com/safedep/chakra detoxio-api-protocolbuf
 ### As GenAI App Scanner
 
 It works as follows: 
-1. Run `python chakra/main.py webapps <>` to start crawling web applications.
+1. Run `python hector/main.py webapps <>` to start crawling web applications.
 2. Open a browser window and insert `[FUZZ]` or `[CHAKRA]` in relevant text areas.
 3. Close the browser after recording interactions.
 4. Tool automatically fuzzes requests using recorded prompts.
@@ -66,30 +66,30 @@ export DETOXIO_API_KEY=xxxx
 
 Run it
 ```bash
-poetry run chakra webapps <URL>
+poetry run hector webapps <URL>
 ```
 
 **Record a Crawling Session**
 ```bash
-chakra webapps <URL> -s session.har --skip_testing
+hector webapps <URL> -s session.har --skip_testing
 cat session.har | grep [FUZZ] | wc -l  
 ```
 The above command will open the browser. Specify the Fuzzing Marker [FUZZ] in a chat box. Close the browser window to save the session 
 
 **Just Test using Recorded Session**
 ```bash
-chakra webapps <URL> -s session.har --skip_crawling --markdown report.md --json report.json
+hector webapps <URL> -s session.har --skip_crawling --markdown report.md --json report.json
 ```
 No Browser will open. Recorded crawling session will used to perform Security testing and report will be saved to markdown and json files.
 
 **Specify filters to generate prompts specific to industry or threat class**
 
 ```bash
-chakra webapps https://69c207a7e69699ce8e.gradio.live/ -s demo.har --skip_crawling --json report.json --threat-class bypass --markdown report.md
+hector webapps https://69c207a7e69699ce8e.gradio.live/ -s demo.har --skip_crawling --json report.json --threat-class bypass --markdown report.md
 ```
 
 ```bash
-chakra webapps https://69c207a7e69699ce8e.gradio.live/ -s demo.har --skip_crawling --industry healthcare --json report.json --threat-class bypass
+hector webapps https://69c207a7e69699ce8e.gradio.live/ -s demo.har --skip_crawling --industry healthcare --json report.json --threat-class bypass
 
 ```
 
@@ -134,7 +134,7 @@ options:
 It works as follows: 
 1. Use Burpsuite in tandum with Andoird emulator to intercept request made to GenAI application
 2. Save this request to a file
-3. Run `python chakra/main.py mobileapp <>` to start testing.
+3. Run `python hector/main.py mobileapp <>` to start testing.
 4. Tool automatically fuzzes requests using recorded prompt. In order to fuzz either:
     * Replace the input prompt with `[FUZZ]` OR `[CHAKRA]`
     * Provide a prompt paramtere which is the parameter in the request that maps to the input prompt
@@ -151,7 +151,7 @@ export DETOXIO_API_KEY=xxxx
 
 Run it
 ```bash
-poetry run chakra mobileapp <URL> -r <Request file path>
+poetry run hector mobileapp <URL> -r <Request file path>
 ```
 
 **Other Options**
@@ -181,7 +181,7 @@ options:
 
 # Assuming you have already imported the necessary modules and classes
 
-from chakra.scanner import DetoxioModelDynamicScanner
+from hector.scanner import DetoxioModelDynamicScanner
 
 def example_usage():
     # Provide your API key or set it as an environment variable
@@ -261,13 +261,13 @@ We are using [Playwrite](https://playwright.dev/) to record Crawled data
 
 **Clone**
 ```bash
-git clone https://github.com/safedep/chakra
+git clone https://github.com/safedep/hector
 ```
 
 **Install Dependencies**
 ```bash
 pip install poetry
-cd chakra
+cd hector
 poetry install
 ```
 
@@ -276,7 +276,7 @@ poetry install
 **Run it**
 
 ```bash 
-poetry run chakra
+poetry run hector
 ```
 [DO NOT FORGET TO SET Detoxio AI API key]
 

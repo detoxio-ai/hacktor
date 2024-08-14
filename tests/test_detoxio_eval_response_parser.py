@@ -1,5 +1,5 @@
 import pytest  
-from chakra.parser import DetoxioEvaluationResponseParser
+from hector.parser import DetoxioEvaluationResponseParser
 
 
 RESULT_BIG = {

@@ -5,7 +5,7 @@ import unittest
 import proto.dtx.messages.common.threat_pb2 as dtx_threat_pb2
 import proto.dtx.messages.common.industry_pb2 as dtx_industry_pb2
 import proto.dtx.services.prompts.v1.prompts_pb2 as dtx_prompts_pb2
-from chakra.scanner import DetoxioGeneratorFilterBuilder
+from hector.scanner import DetoxioGeneratorFilterBuilder
 
 
 class TestBuildFilter(unittest.TestCase):
