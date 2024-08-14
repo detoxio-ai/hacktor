@@ -1,8 +1,8 @@
-# Chakra
+# Hector
 
 ## Why does it exist?
 
-Chakra is a versatile tool for:
+Hector is a versatile tool for:
 
 - **Web App Pentesters & Security Engineers**: Security test GenAI Chatbots, Assistants, and Agents.
 - **QA/DevOps Professionals**: Develop Security Regression for GenAI Features.
@@ -16,7 +16,7 @@ Refer to Features and Use Case Section for more details
 
 ## Getting Started
 
-**Clone and install Chakra**
+**Clone and install Hector**
 
 ```bash
 git clone https://github.com/safedep/hector.git
@@ -50,7 +50,7 @@ pip install hector@git+https://github.com/safedep/hector detoxio-api-protocolbuf
 
 It works as follows: 
 1. Run `python hector/main.py webapps <>` to start crawling web applications.
-2. Open a browser window and insert `[FUZZ]` or `[CHAKRA]` in relevant text areas.
+2. Open a browser window and insert `[FUZZ]` or `[HECTOR]` in relevant text areas.
 3. Close the browser after recording interactions.
 4. Tool automatically fuzzes requests using recorded prompts.
 5. Generate report summarizing fuzzing results.
@@ -116,7 +116,7 @@ options:
   -l LOG_LEVEL, --log_level LOG_LEVEL
                         Path to session file for storing crawl results
   --marker MARKER       FUZZ marker. By Default, the tool will detect any of these markers: [[FUZZ]] [FUZZ] FUZZ <<FUZZ>>
-                        [[CHAKRA]] [CHAKRA] CHAKRA <<CHAKRA>>
+                        [[HECTOR]] [HECTOR] HECTOR <<HECTOR>>
 
   --industry {HEALTHCARE,FINANCE,RETAIL,AGRICULTURE,AUTOMOTIVE,BANKING,BIOTECHNOLOGY,CHEMICALS,CONSTRUCTION ...}
                         Filter Prompts related to the industry.
@@ -136,7 +136,7 @@ It works as follows:
 2. Save this request to a file
 3. Run `python hector/main.py mobileapp <>` to start testing.
 4. Tool automatically fuzzes requests using recorded prompt. In order to fuzz either:
-    * Replace the input prompt with `[FUZZ]` OR `[CHAKRA]`
+    * Replace the input prompt with `[FUZZ]` OR `[HECTOR]`
     * Provide a prompt paramtere which is the parameter in the request that maps to the input prompt
 5. Generate report summarizing fuzzing results.
 6. Report can be printed to console or saved for further analysis.
@@ -210,18 +210,18 @@ if __name__ == "__main__":
 
 ## Use Cases
 
-**Red Teaming GenAI Chatbots**:  Craft toxic prompts to test the resilience of your GenAI chatbots against adversarial attacks. Chakra aids in evaluating your chatbot's ability to handle unexpected or malicious inputs.
+**Red Teaming GenAI Chatbots**:  Craft toxic prompts to test the resilience of your GenAI chatbots against adversarial attacks. Hector aids in evaluating your chatbot's ability to handle unexpected or malicious inputs.
 
-**Mobile GenAI App Security Testing**:  Fortify the security of your GenAI mobile apps.  By combining Chakra with Burp, a suite of web security testing tools, you can:
+**Mobile GenAI App Security Testing**:  Fortify the security of your GenAI mobile apps.  By combining Hector with Burp, a suite of web security testing tools, you can:
 
 Decompile the mobile app to understand its inner workings.
 Record requests and responses using Burp to capture the app's interactions.
-Test the captured APIs using Chakra to identify potential vulnerabilities.
+Test the captured APIs using Hector to identify potential vulnerabilities.
 
-**CI/CD Integration for GenAI Testing**:  Streamline GenAI security testing into your CI/CD pipeline, ensuring continuous security throughout the development lifecycle. Chakra integrates with Playwright, a popular automation framework, to:
+**CI/CD Integration for GenAI Testing**:  Streamline GenAI security testing into your CI/CD pipeline, ensuring continuous security throughout the development lifecycle. Hector integrates with Playwright, a popular automation framework, to:
 
 Record user sessions within the GenAI application.
-Automatically execute Chakra tests based on the recorded sessions during the CI/CD process.
+Automatically execute Hector tests based on the recorded sessions during the CI/CD process.
 
 ## Features 
 

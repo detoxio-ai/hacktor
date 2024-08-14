@@ -18,7 +18,7 @@ from google.protobuf import json_format
 import proto.dtx.services.prompts.v1.prompts_pb2 as prompts_pb2
 from hector.workflow.scan import ScanWorkflow
 
-FUZZING_MARKERS = ["[[FUZZ]]", "[FUZZ]", "FUZZ", "<<FUZZ>>", "[[CHAKRA]]", "[CHAKRA]", "CHAKRA", "<<CHAKRA>>"]
+FUZZING_MARKERS = ["[[FUZZ]]", "[FUZZ]", "FUZZ", "<<FUZZ>>", "[[HECTOR]]", "[HECTOR]", "HECTOR", "<<HECTOR>>"]
 TEMPLATE_PROMPT = { "generatedAt": "2024-03-23T10:41:40.115447256Z", 
                     "data": {"content": ""}, 
                     "sourceLabels": {"domain": "ANY", "category": "ANY"}

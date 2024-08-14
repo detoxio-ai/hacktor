@@ -38,7 +38,7 @@ Human Assisted Testing of GenAI Apps and Models:
 
 [1] python hector/main.py webapps <<GenAI APP URL>>
 
-[2] Browser window will open, type [FUZZ] or [CHAKRA] in a text area to be used for testing
+[2] Browser window will open, type [FUZZ] or [HECTOR] in a text area to be used for testing
 
 [3] Once recording is done, close the browser
 

@@ -32,7 +32,7 @@ class HumanAssistedWebCrawler:
     def on_web_socket(self, ws):
         logging.warn(f"""
                      Unsupported ##############\nApp is using Web Sockets. 
-                     Chakra does not support Web Sockets yet!!!\n
+                     Hector does not support Web Sockets yet!!!\n
                      WebSocket opened on URL {ws.url}
                      ##############""")
         ws.send
