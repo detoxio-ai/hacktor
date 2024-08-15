@@ -7,7 +7,7 @@ from tqdm import tqdm
 import logging
 from addict import Dict
 from hacktor.webapp.har import Har2WebappRemoteModel, BurpRequest2MobileAppRemoteModel
-from hacktor.webapp.crawler import HumanAssistedWebCrawler
+from hacktor.webapp.playwright import HumanAssistedWebCrawler
 from hacktor.dtx.scanner import DetoxioModelDynamicScanner
 from hacktor.webapp.model import GradioAppModel
 from hacktor.webapp.gradio import GradioUtils
