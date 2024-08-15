@@ -36,7 +36,7 @@ class BasePrinter:
     def subheading(self, message):
         pass  # Override to do nothing
 
-    def progress_bar(self, title, max):
+    def progress_bar(self, title, max) -> DummyProgressBar:
         return DummyProgressBar(title=title, max=max)
 
 class ProgressBar:

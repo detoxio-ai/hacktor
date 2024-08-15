@@ -19,6 +19,7 @@ from hacktor.workflow.phases import ScanWorkflow
 
 from ..webapp.crawler import ModelCrawler, ModelCrawlerOptions
 from ..webapp.ai.predict import OpenAIPredictNextPrompts
+from ..webapp.fuzzer import StatefulModelFuzzerConfig, StatefulModelFuzzer, ModelCrawledStateBuilder
 
 FUZZING_MARKERS = ["[[FUZZ]]", "[FUZZ]", "FUZZ", "<<FUZZ>>", "[[HACKTOR]]", "[HACKTOR]", "HACKTOR", "<<HACKTOR>>"]
 TEMPLATE_PROMPT = { "generatedAt": "2024-03-23T10:41:40.115447256Z", 
@@ -115,14 +116,18 @@ class GenAIWebScanner:
                      prompt_generator=OpenAIPredictNextPrompts(),
                      options=ModelCrawlerOptions(max_depth=4,
                                                  initial_prompts=["Hello"], 
-                                                 max_steps=20)
+                                                 max_steps=10)
                      , printer=self.printer
                      )
         
         crawler.crawl()
-        crawler.print_tree()
-        model = model_factory.new()
-        return self.__scan_model(model)
+        crawler.print_tree()        
+        stateful_model = ModelCrawledStateBuilder(crawler=crawler).build()
+        fuzz_config = StatefulModelFuzzerConfig(max_tests=10)
+        fuzzer = StatefulModelFuzzer(config=fuzz_config, model=stateful_model, 
+                                     printer=self.printer)
+        
+        return fuzzer.scan()
 
     def _scan_webapp(self, url, use_ai):
         self.scan_workflow.to_crawling()
@@ -159,11 +164,11 @@ class GenAIWebScanner:
             Predict signature of remote gradio endpoint
         """
         try:
-            self.printer.info("Trying to detect endpoint Request / Response Schema via APIs Specs provided by Gradio")
+            self.printer.info("Trying to detect endpoint Request / Response Schema via APIs Specs provided by Gradio\n")
             return self._detect_gradio_predict_api_signature_via_api_spec(url)
         except Exception as ex:
             logging.exception(ex)
-        self.printer.info("Trying to detect endpoint Request / Response Schema via Crawling the Gradio UI")
+        self.printer.info("Trying to detect endpoint Request / Response Schema via Crawling the Gradio UI\n")
         return self._detect_gradio_predict_api_signature_via_crawling(url)
 
 

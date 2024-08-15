@@ -1,12 +1,16 @@
+import logging
 from collections import deque
 import networkx as nx
 from typing import Deque, List
+from hacktor.utils.printer import BasePrinter
 from .crawler import ModelCrawler, TraversalStrategy
+from hacktor.dtx.scanner import DetoxioModelDynamicScanner
 
-class ModelFuzzer:
+
+class ModelCrawledState:
     def __init__(self, crawler: ModelCrawler):
         """
-        Initialize ModelFuzzer with a ModelCrawler instance.
+        Initialize ModelCrawledState with a ModelCrawler instance.
 
         Parameters:
         - crawler (ModelCrawler): The model crawler instance from which the fuzzer will derive its tree, model factory, and other settings.
@@ -19,9 +23,13 @@ class ModelFuzzer:
         self.model_factory = crawler.model_factory
         self.current_model = None  # This will hold the current model instance
         self.current_node_id = 0   # Start at the root node
+        self.current_prompt_template = ""
 
         # Initialize traversal structures based on tree and traversal strategy
         self.nodes_to_visit = self._initialize_nodes_to_visit()
+
+    def no_of_states(self) -> int:
+        return len(self.nodes_to_visit)
 
     def _initialize_nodes_to_visit(self):
         """
@@ -63,7 +71,11 @@ class ModelFuzzer:
         if self.current_model is None:
             raise Exception("Fuzzer has not been started. Please call start() before invoking.")
         
-        _, response = self.current_model.generate(prompt)
+        self.current_prompt_template = self.current_prompt_template or "{message}"
+        _prompt = self.current_prompt_template.format(message=prompt)
+            
+        print("Template", self.current_prompt_template, "Prompt", _prompt)
+        _, response = self.current_model.generate(_prompt)
         return response
     
     def next(self):
@@ -87,27 +99,105 @@ class ModelFuzzer:
         traversal_path = nx.shortest_path(self.tree, source=0, target=self.current_node_id)
         for node_id in traversal_path[1:]:  # Start from the first child node to follow the path
             node_prompt = self.tree.nodes[node_id]["prompt"]
+            self.current_prompt_template = self.tree.nodes[node_id]["template"]
             self.current_model.generate(node_prompt)
 
 
-class ModelFuzzerBuilder:
+class ModelCrawledStateBuilder:
     def __init__(self, crawler: ModelCrawler):
         """
-        Initialize ModelFuzzerBuilder with a ModelCrawler instance.
+        Initialize ModelCrawledStateBuilder with a ModelCrawler instance.
 
         Parameters:
         - crawler (ModelCrawler): The model crawler instance that will be used to build the fuzzer.
         """
         self.crawler = crawler
     
-    def build(self) -> ModelFuzzer:
+    def build(self) -> ModelCrawledState:
         """
-        Build and return an instance of ModelFuzzer.
+        Build and return an instance of ModelCrawledState.
 
         Returns:
-        - ModelFuzzer: A ModelFuzzer instance.
+        - ModelCrawledState: A ModelCrawledState instance.
         """
-        return ModelFuzzer(self.crawler)
+        return ModelCrawledState(self.crawler)
+
+
+class StatefulModelFuzzerConfig:
+    
+    def __init__(self, max_tests:int=100, detoxio_api_key:str=None):
+        self.max_tests = max_tests
+        self.detoxio_api_key = detoxio_api_key
+
+
+class StatefulModelFuzzer:
+    def __init__(self, config:StatefulModelFuzzerConfig, 
+                    model:ModelCrawledState, 
+                    printer:BasePrinter):
+        self.config = config 
+        self.detoxio_api_key = self.config.detoxio_api_key
+        self.model = model
+        self._unsafe_results_found=0
+        self._total_tests = 0
+        self._max_tests = self.config.max_tests
+        self._MAX_TESTS = self.config.max_tests
+        self._printer = printer
+        self._bar = self._printer.progress_bar("Fuzzing", self._MAX_TESTS)
+        # Calculate number of tests per state
+        self._tests_per_state = max(int(self.model.no_of_states() / self._max_tests), 1)
+    
+    def plan(self):
+        pass
+    
+    def scan(self):
+        self.model.start()
+        scanner = DetoxioModelDynamicScanner(api_key=self.detoxio_api_key)
+        with scanner.new_session() as session:
+            self._scan(session)
+            report = session.get_report()
+            return report
+    
+    def _scan(self, session):
+        self._scan_single_state(session)
+        while self._total_tests < self._MAX_TESTS:
+            try:
+                self.model.next()
+                self._scan_single_state(session)
+            except StopIteration as si:
+                break
+        
+    
+    def _scan_single_state(self, session):                
+        # Generate prompts
+        logging.info("Initialized Session..")
+        prompt_generator = self._generate_prompts(session)
+        try:
+            for i, prompt in enumerate(prompt_generator):
+                logging.debug("Generated Prompt: \n%s", prompt.data.content)
+                self._printer.trace(f"[{i+1}] Generated Prompt: {prompt.data.content[0:100]}...")
+                # Simulate model output
+                model_output_text = self.model.invoke(prompt.data.content)
+                self._printer.trace(f"[{i+1}] Response: {model_output_text}...")
+                logging.info("Output %s \n", model_output_text)
+                logging.debug("Model Executed: \n%s", model_output_text)
+                # Evaluate the model interaction
+                if len(model_output_text) > 2: # Make sure the output is not empty
+                    evaluation_response = session.evaluate(prompt, model_output_text)
+                    logging.debug("Evaluation Response \n%s", evaluation_response)
+                if session.get_report().count_unsafe_results() > self._unsafe_results_found:
+                    self._unsafe_results_found = session.get_report().count_unsafe_results()
+                    self._printer.critical(f"Total Unsafe Responses {self._unsafe_results_found}")
+                logging.debug("Evaluation Executed...")
+                self._total_tests += 1
+                self._bar.next()
+        except Exception as ex:
+            logging.exception(ex)
+            raise ex
+
+
+    def _generate_prompts(self, scanner_session, prompt_filter=None):
+        logging.debug("Using Detoxio AI Prompts Generation..")
+        return scanner_session.generate(count=self._tests_per_state, filter=prompt_filter)
 
 
 # Example usage:
@@ -117,7 +207,7 @@ class ModelFuzzerBuilder:
 # crawler = ModelCrawler(model_factory, prompt_generator, options)
 # crawler.crawl()
 
-# fuzzer_builder = ModelFuzzerBuilder(crawler)
+# fuzzer_builder = ModelCrawledStateBuilder(crawler)
 # model_fuzzer = fuzzer_builder.build(strategy=TraversalStrategy.BFS)  # or TraversalStrategy.DFS
 
 # model_fuzzer.start()

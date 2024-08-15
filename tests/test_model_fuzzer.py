@@ -12,7 +12,7 @@ from hacktor.webapp.crawler import (
     ModelCrawlerOptions,
     TraversalStrategy
 )
-from hacktor.webapp.fuzzer import ModelFuzzer, ModelFuzzerBuilder
+from hacktor.webapp.fuzzer import ModelCrawledState, ModelCrawledStateBuilder
 from hacktor.webapp.ai.predict import NextPrompts
 
 # Mock classes for testing
@@ -62,8 +62,8 @@ class MockNextPromptGenerator(NextPromptGenerator):
         return NextPrompts(prompts=prompts, template=None)
 
 
-# Test cases for ModelFuzzer
-class TestModelFuzzer(unittest.TestCase):
+# Test cases for ModelCrawledState
+class TestModelCrawledState(unittest.TestCase):
 
     def setUp(self):
         self.options = ModelCrawlerOptions(max_depth=3, initial_prompts=["Hello"], strategy=TraversalStrategy.DFS)
@@ -71,7 +71,7 @@ class TestModelFuzzer(unittest.TestCase):
         self.prompt_generator = MockNextPromptGenerator()
         self.crawler = ModelCrawler(self.model_factory, self.prompt_generator, self.options)
         self.crawler.crawl()
-        self.fuzzer_builder = ModelFuzzerBuilder(self.crawler)
+        self.fuzzer_builder = ModelCrawledStateBuilder(self.crawler)
 
     def test_fuzzer_initialization(self):
         fuzzer = self.fuzzer_builder.build()
@@ -115,7 +115,7 @@ class TestModelFuzzer(unittest.TestCase):
         options.strategy = TraversalStrategy.DFS
         self.crawler = ModelCrawler(self.model_factory, self.prompt_generator, options)
         self.crawler.crawl()
-        fuzzer = ModelFuzzer(self.crawler)
+        fuzzer = ModelCrawledState(self.crawler)
 
         fuzzer.start()
 
@@ -160,7 +160,7 @@ class TestModelFuzzer(unittest.TestCase):
         options.strategy = TraversalStrategy.BFS
         self.crawler = ModelCrawler(self.model_factory, self.prompt_generator, options)
         self.crawler.crawl()
-        fuzzer = ModelFuzzer(self.crawler)
+        fuzzer = ModelCrawledState(self.crawler)
 
         fuzzer.start()
 
@@ -182,7 +182,7 @@ class TestModelFuzzer(unittest.TestCase):
         options.strategy = TraversalStrategy.DFS
         self.crawler = ModelCrawler(self.model_factory, self.prompt_generator, options)
         self.crawler.crawl()
-        fuzzer = ModelFuzzer(self.crawler)
+        fuzzer = ModelCrawledState(self.crawler)
 
         fuzzer.start()
 
