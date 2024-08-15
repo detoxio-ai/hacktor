@@ -134,7 +134,7 @@ Human Assisted Testing of GenAI Apps and Models:
     # Check if the program should run
     check_prerequisites(args)
 
-    printer = Printer(False, True)
+    printer = Printer(False, False)
     scan_workflow = ScanWorkflow(printer)
 
     report = None

@@ -126,7 +126,7 @@ class GenAIWebScanner:
 
     def _scan_webapp(self, url, use_ai):
         self.scan_workflow.to_crawling()
-        session_file_path = self._crawl(url)
+        session_file_path = self._capture_session(url)
 
         if self.options.skip_testing:
             self.printer.warn("Testing is skipped as per user option provided")
@@ -191,16 +191,16 @@ class GenAIWebScanner:
                         predict_signature['sig'] = post_data_json.get("data")
                     except Exception as ex:
                         logging.exception("Found an error while detecting gradio predict signature", ex)
-        self._crawl(url, _handle_request)
+        self._capture_session(url, _handle_request)
         logging.debug("Identified Gradio Signature", predict_signature)
         if len(predict_signature) <= 0:
             logging.warn("[WARNING] Could not detect gradio predict signature. Did you specify [FUZZ] marker?")
         # print(predict_signature)
         return "/predict", predict_signature.get('sig')
 
-    def _crawl(self, url, intercept_request_hook=None):
+    def _capture_session(self, url, intercept_request_hook=None):
         """
-            Crawl and return the session file path
+            Use Browser to catpure the session
         """
         session_file_path = self.options.session_file_path
         if not self.options.skip_crawling:

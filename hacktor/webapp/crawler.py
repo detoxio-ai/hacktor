@@ -12,7 +12,6 @@ from typing import Deque, Tuple
 from hacktor.utils.printer import BasePrinter
 
 
-
 class HumanAssistedWebCrawler:
     def __init__(self, headless=False, speed=300, browser_name="Chromium", fuzz_marker="[FUZZ]"):
         self._headless = headless
@@ -195,17 +194,24 @@ class ModelCrawler:
         for prompt in self.options.initial_prompts:
             queue.append((root_id, prompt, self.options.max_depth))
         
+        bar = self.printer.progress_bar("Crawling", len(queue) or 4)
         # Process the queue
         while queue and self.node_counter < self.options.max_steps:
-            self.printer.info(f"Queue length: {len(queue)}, Processed: {self.node_counter}")
+            # self.printer.info(f"Queue length: {len(queue)}, Processed: {self.node_counter}")
             if self.strategy == TraversalStrategy.BFS:
                 parent_id, current_prompt, depth = queue.popleft()
             else:  # DFS
                 parent_id, current_prompt, depth = queue.pop()
             self.printer.trace(f"Processing Node: {current_prompt} at depth {self.options.max_depth - depth}")
-            self._process_node(queue, parent_id, current_prompt, depth)
+            
+            processed = self._process_node(queue, parent_id, current_prompt, depth)
+            if processed:
+                bar.next(max=self.node_counter+len(queue))
     
-    def _process_node(self, queue: Deque[Tuple[int, str, int]], parent_id: int, current_prompt: str, depth: int):
+    def _process_node(self, queue: Deque[Tuple[int, str, int]], 
+                      parent_id: int, 
+                      current_prompt: str, 
+                      depth: int) -> bool:
         """
         Process a single node in the tree.
 
@@ -214,10 +220,12 @@ class ModelCrawler:
         - parent_id (int): The ID of the parent node in the tree.
         - current_prompt (str): The current prompt to use.
         - depth (int): Remaining depth to traverse.
+        Returns:
+         - Status whether any node is processed
         """
         if depth == 0:
             self.printer.trace(f"Reached max depth with prompt: {current_prompt}")
-            return
+            return False
         
         # Get the current model instance and generate a response
         model = self.model_factory.get()
@@ -251,6 +259,7 @@ class ModelCrawler:
         for next_prompt in next_prompts:
             queue.append((node_id, next_prompt, depth - 1))
             self.printer.trace(f"Enqueued next prompt: {next_prompt} at depth {self.options.max_depth - (depth - 1)}")
+        return True
     
     def print_tree(self):
         """

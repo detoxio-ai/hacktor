@@ -1,9 +1,18 @@
     
 from colorama import Fore, Style, init
+from progress.bar import Bar
 
 # Initialize colorama
 init(autoreset=True)
 
+
+class DummyProgressBar:
+    
+    def __init__(self, title:str, max:int):
+        pass
+    
+    def next(self, max:int=None):
+        pass
 class BasePrinter:
     def __init__(self, silent: bool = True, verbose: bool = False):
         self.silent=silent
@@ -26,6 +35,19 @@ class BasePrinter:
 
     def subheading(self, message):
         pass  # Override to do nothing
+
+    def progress_bar(self, title, max):
+        return DummyProgressBar(title=title, max=max)
+
+class ProgressBar:
+    
+    def __init__(self, title:str, max:int):
+        self.bar = Bar(title, max=max, suffix='%(index)d / %(max)d')
+    
+    def next(self, max:int=None):
+        if max:
+            self.bar.max = max
+        self.bar.next()
 
 class Printer(BasePrinter):
     # ANSI color codes
@@ -62,3 +84,6 @@ class Printer(BasePrinter):
     def subheading(self, message):
         if not self.silent:
             print(f"{self.BOLD_PURPLE}{message}{Style.RESET_ALL}")
+    
+    def progress_bar(self, title, max):
+        return ProgressBar(title=title, max=max)
