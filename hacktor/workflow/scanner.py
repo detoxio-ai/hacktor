@@ -3,23 +3,22 @@ import select
 import tempfile
 import json
 import copy
-from io import StringIO  
 from tqdm import tqdm
 import logging
 from addict import Dict
 from hacktor.webapp.har import Har2WebappRemoteModel, BurpRequest2MobileAppRemoteModel
 from hacktor.webapp.crawler import HumanAssistedWebCrawler
-from hacktor.scanner import DetoxioModelDynamicScanner
-from .model import GradioAppModel
-from .gradio import GradioUtils
+from hacktor.dtx.scanner import DetoxioModelDynamicScanner
+from hacktor.webapp.model import GradioAppModel
+from hacktor.webapp.gradio import GradioUtils
 import proto.dtx.services.prompts.v1.prompts_pb2 as dtx_prompts_pb2
 
 from google.protobuf import json_format
 import proto.dtx.services.prompts.v1.prompts_pb2 as prompts_pb2
-from hacktor.workflow.scan import ScanWorkflow
+from hacktor.workflow.phases import ScanWorkflow
 
-from .crawler import ModelCrawler, ModelCrawlerOptions
-from .ai.predict import OpenAIPredictNextPrompts
+from ..webapp.crawler import ModelCrawler, ModelCrawlerOptions
+from ..webapp.ai.predict import OpenAIPredictNextPrompts
 
 FUZZING_MARKERS = ["[[FUZZ]]", "[FUZZ]", "FUZZ", "<<FUZZ>>", "[[HACKTOR]]", "[HACKTOR]", "HACKTOR", "<<HACKTOR>>"]
 TEMPLATE_PROMPT = { "generatedAt": "2024-03-23T10:41:40.115447256Z", 

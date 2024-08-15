@@ -37,7 +37,10 @@ class OpenAIPredictNextPrompts:
             {response}
             </response>
 
-            Your task is to provide next prompts that a human can provide to the remote system. Specific prompts should be at the top, open ended should be at the bottom. Please format your output as a JSON array of strings, where each string represents a possible follow-up prompt. Your JSON response should follow this structure:
+            Your task is to provide next prompts that a human can provide to the remote system. 
+            Specific prompts should be at the top, open ended should be at the bottom. Be specific to the suggestions provided in the model response. Do not ask generic questions.
+            
+            Please format your output as a JSON array of strings, where each string represents a possible follow-up prompt. Your JSON response should follow this structure:
 
             ```json
             ["Prompt1", "Prompt2", "Prompt3"]

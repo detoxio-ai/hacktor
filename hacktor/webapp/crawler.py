@@ -202,7 +202,7 @@ class ModelCrawler:
                 parent_id, current_prompt, depth = queue.popleft()
             else:  # DFS
                 parent_id, current_prompt, depth = queue.pop()
-            self.printer.info(f"Processing Node: {current_prompt} at depth {self.options.max_depth - depth}")
+            self.printer.trace(f"Processing Node: {current_prompt} at depth {self.options.max_depth - depth}")
             self._process_node(queue, parent_id, current_prompt, depth)
     
     def _process_node(self, queue: Deque[Tuple[int, str, int]], parent_id: int, current_prompt: str, depth: int):
@@ -216,7 +216,7 @@ class ModelCrawler:
         - depth (int): Remaining depth to traverse.
         """
         if depth == 0:
-            self.printer.info(f"Reached max depth with prompt: {current_prompt}")
+            self.printer.trace(f"Reached max depth with prompt: {current_prompt}")
             return
         
         # Get the current model instance and generate a response
@@ -228,7 +228,7 @@ class ModelCrawler:
         self.tree.add_node(node_id, prompt=current_prompt, response=response, next_prompts=[])
         self.node_counter += 1
         
-        self.printer.info(f"Generated Response: {response} for Prompt: {current_prompt}")
+        self.printer.trace(f"Generated Response: {response} for Prompt: {current_prompt}")
 
         # Add an edge from the parent to the current node
         self.tree.add_edge(parent_id, node_id)
@@ -237,16 +237,20 @@ class ModelCrawler:
         next_prompts = self.prompt_generator.next_prompts(current_prompt, response)
         
         if not next_prompts:
-            self.printer.info(f"No further prompts for: {current_prompt}, stopping here.")
+            self.printer.trace(f"No further prompts for: {current_prompt}, stopping here.")
             return  # No next prompts, stop further processing
         
         # Update the next prompts for the current node
         self.tree.nodes[node_id]["next_prompts"] = next_prompts
         
+        # As next prompts are left prioritized, reverse the priority in case of DFS, before inserting
+        if self.strategy == TraversalStrategy.DFS:
+            next_prompts.reverse()
+                   
         # Enqueue the next prompts
         for next_prompt in next_prompts:
             queue.append((node_id, next_prompt, depth - 1))
-            self.printer.info(f"Enqueued next prompt: {next_prompt} at depth {self.options.max_depth - (depth - 1)}")
+            self.printer.trace(f"Enqueued next prompt: {next_prompt} at depth {self.options.max_depth - (depth - 1)}")
     
     def print_tree(self):
         """

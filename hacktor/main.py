@@ -1,11 +1,13 @@
 import os
 import argparse
 import logging
-from hacktor.scanner import DetoxioGeneratorFilterBuilder
-from hacktor.webapp.scanner import GenAIWebScanner, CrawlerOptions, ScannerOptions, FUZZING_MARKERS
+from hacktor.dtx.scanner import DetoxioGeneratorFilterBuilder
+from hacktor.workflow.scanner import (
+    GenAIWebScanner, CrawlerOptions, ScannerOptions, FUZZING_MARKERS
+)
 
 from hacktor.utils.printer import Printer
-from hacktor.workflow.scan import ScanWorkflow
+from hacktor.workflow.phases import ScanWorkflow
 
 
 def setup_logging(args):
