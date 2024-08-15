@@ -18,6 +18,9 @@ from google.protobuf import json_format
 import proto.dtx.services.prompts.v1.prompts_pb2 as prompts_pb2
 from hacktor.workflow.scan import ScanWorkflow
 
+from .crawler import ModelCrawler, ModelCrawlerOptions
+from .ai.predict import OpenAIPredictNextPrompts
+
 FUZZING_MARKERS = ["[[FUZZ]]", "[FUZZ]", "FUZZ", "<<FUZZ>>", "[[HACKTOR]]", "[HACKTOR]", "HACKTOR", "<<HACKTOR>>"]
 TEMPLATE_PROMPT = { "generatedAt": "2024-03-23T10:41:40.115447256Z", 
                     "data": {"content": ""}, 
@@ -31,6 +34,27 @@ class CrawlerOptions:
         self.headless=headless
         self.browser_name=browser_name
         self.speed = speed
+
+class MyModelFactory:
+    
+    def __init__(self, create_fn):
+        self.create_fn = create_fn
+        self.current=None
+    
+    def new(self):
+        """ 
+            Return new instance of the model
+        """
+        self.current = self.create_fn()
+        return self.current
+        
+    def get(self):
+        """
+            Get current instance of the model
+        """
+        if not self.current:
+            return self.new()
+        return self.current
 
 class ScannerOptions:
     def __init__(self, session_file_path, 
@@ -78,11 +102,24 @@ class GenAIWebScanner:
     def _scan_gradio_app(self, url, use_ai):
         # Create model
         self.scan_workflow.to_crawling()
-        api_name, predict_signature = self._detect_gradio_predict_api_signature(url)
-        model = GradioAppModel(url, api_name, predict_signature, self.options.fuzz_markers)
-        # Train model to learn reponse structure and how to extract answer
-        logging.debug("Learning model response structure")
-        model.prechecks(use_ai=use_ai)
+        
+        def create_model():
+            api_name, predict_signature = self._detect_gradio_predict_api_signature(url)
+            model = GradioAppModel(url, api_name, predict_signature, self.options.fuzz_markers)
+            # Train model to learn reponse structure and how to extract answer
+            logging.debug("Learning model response structure")
+            model.prechecks(use_ai=use_ai)
+            return model
+        model_factory = MyModelFactory(create_model)
+        
+        crawler = ModelCrawler(model_factory=model_factory, 
+                     prompt_generator=OpenAIPredictNextPrompts(),
+                     options=ModelCrawlerOptions(max_depth=4, initial_prompts=["Hello"], max_steps=2)
+                     )
+        
+        crawler.crawl()
+        crawler.print_tree()
+        model = model_factory.new()
         return self.__scan_model(model)
 
     def _scan_webapp(self, url, use_ai):

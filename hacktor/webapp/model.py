@@ -8,7 +8,7 @@ from retry import retry
 from gradio_client import Client
 from .gradio import GradioUtils
 from hacktor.utils.printer import BasePrinter
-from .ai import OpenAIResponseExtractor
+from .ai.parser import OpenAIResponseExtractor
 
 class RequestModel:
     def __init__(self, method, url, headers, data, ctype):
@@ -193,10 +193,16 @@ class AIModelResponseParser:
         Returns:
         - tuple: A tuple containing the parsed content and the extracted information.
         """
-        content_text_without_prompt = str(raw_response).replace(prompt, "")
+        
+        if type(raw_response) in [str, int, tuple, dict, list]:
+            response_content = raw_response
+        else: 
+            response_content = str(raw_response.content)
+        
+        content_text_without_prompt = str(response_content).replace(prompt, "")
         model_response = ""
         try:
-            model_response = self.ai_parser.extract_response(prompt, raw_response)
+            model_response = self.ai_parser.extract_response(prompt, response_content)
         except Exception as ex:
             logging.warn("Error will using AI to extract response %s", ex)
         return content_text_without_prompt, model_response
