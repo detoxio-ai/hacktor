@@ -1,5 +1,5 @@
 import pytest  
-from hacktor.parser import DetoxioEvaluationResponseParser
+from hacktor.dtx.parser import DetoxioEvaluationResponseParser
 
 
 RESULT_BIG = {

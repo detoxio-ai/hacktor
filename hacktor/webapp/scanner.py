@@ -114,7 +114,10 @@ class GenAIWebScanner:
         
         crawler = ModelCrawler(model_factory=model_factory, 
                      prompt_generator=OpenAIPredictNextPrompts(),
-                     options=ModelCrawlerOptions(max_depth=4, initial_prompts=["Hello"], max_steps=2)
+                     options=ModelCrawlerOptions(max_depth=4,
+                                                 initial_prompts=["Hello"], 
+                                                 max_steps=20)
+                     , printer=self.printer
                      )
         
         crawler.crawl()

@@ -181,7 +181,7 @@ options:
 
 # Assuming you have already imported the necessary modules and classes
 
-from hacktor.scanner import DetoxioModelDynamicScanner
+from hacktor.dtx.scanner import DetoxioModelDynamicScanner
 
 def example_usage():
     # Provide your API key or set it as an environment variable

@@ -1,5 +1,5 @@
 import pytest
-from hacktor.parser import DetoxioResponseEvaluationResult
+from hacktor.dtx.parser import DetoxioResponseEvaluationResult
 
 # Sample evaluation result
 RESULT = {
