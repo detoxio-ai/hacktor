@@ -262,7 +262,7 @@ class GenAIWebScanner:
                 raise ex
             self.scan_workflow.to_reporting()
             report = session.get_report()
-            self.scan_workflow.to_finishing()
+            self.scan_workflow.to_Finishing()
     
     def _generate_prompts(self, scanner_session):
         """

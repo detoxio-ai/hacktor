@@ -1,6 +1,7 @@
 import unittest
+from copy import copy
 from unittest.mock import MagicMock
-from typing import List
+from typing import List, Optional
 import networkx as nx
 from hacktor.webapp.crawler import (
     AbstractRemoteModel,
@@ -11,9 +12,11 @@ from hacktor.webapp.crawler import (
     TraversalStrategy
 )
 
+from hacktor.webapp.ai.predict import NextPrompts
 
+# Mock classes
 class MockRemoteModel(AbstractRemoteModel):
-    def generate(self, input_text):
+    def generate(self, input_text: str) -> str:
         responses = {
             "Hello": ("", "Hi there!"),
             "How are you?": ("", "I'm good, thank you!"),
@@ -27,6 +30,7 @@ class MockRemoteModel(AbstractRemoteModel):
         }
         return responses.get(input_text, ("", ""))
 
+
 class MockModelFactory(ModelFactory):
     def __init__(self):
         self.model = MockRemoteModel()
@@ -37,9 +41,10 @@ class MockModelFactory(ModelFactory):
     def get(self) -> AbstractRemoteModel:
         return self.model
 
+
 class MockNextPromptGenerator(NextPromptGenerator):
-    def next_prompts(self, prompt_text: str, response_text: str) -> List[str]:
-        prompts = {
+    def next_prompts(self, prompt_text: str, response_text: str) -> NextPrompts:
+        prompts_map = {
             "Hi there!": ["How are you?", "What's your name?", "What's your favorite color?"],
             "I'm good, thank you!": ["Tell me a joke", "What do you do?"],
             "I'm a bot.": ["What do you do?"],
@@ -48,15 +53,20 @@ class MockNextPromptGenerator(NextPromptGenerator):
             "It reminds me of the sky.": ["Do you like the sky?"],
             "Yes, it's vast and beautiful.": ["What do you do?"],
             "I assist with tasks.": ["Why do you assist with tasks?"],
-            "To make life easier for you.": [],
+            "To make life easier for you.": []
         }
-        return prompts.get(response_text, [])
+
+        prompts = prompts_map.get(response_text, [])
+        template = None  # You could provide a template if the scenario requires
+
+        return NextPrompts(prompts=prompts, template=template)
 
 
+# Test cases
 class TestModelCrawler(unittest.TestCase):
 
     def setUp(self):
-        self.options = ModelCrawlerOptions(max_depth=3, initial_prompts=["Hello"])
+        self.options = ModelCrawlerOptions(max_depth=3, initial_prompts=["Hello"], strategy=TraversalStrategy.BFS)
         self.model_factory = MockModelFactory()
         self.prompt_generator = MockNextPromptGenerator()
     
@@ -93,7 +103,7 @@ class TestModelCrawler(unittest.TestCase):
         # The branch "What's your name?" should exist
         self.assertTrue(any(node[1]['prompt'] == "What's your name?" for node in nodes))
         
-        # Check if any node with "What's your name?" has no further next_prompts
+        # Check if any node with "Why do you assist with tasks?" has no further next_prompts
         self.assertTrue(any(node[1]['prompt'] == "Why do you assist with tasks?" and not node[1]['next_prompts'] for node in nodes))
 
         
@@ -128,7 +138,9 @@ class TestModelCrawler(unittest.TestCase):
         self.assertTrue(any(node[1]['prompt'] == "What's your name?" for node in nodes))
     
     def test_bfs_traversal(self):
-        crawler = ModelCrawler(self.model_factory, self.prompt_generator, self.options, strategy=TraversalStrategy.BFS)
+        options = copy(self.options)
+        options.strategy = TraversalStrategy.BFS
+        crawler = ModelCrawler(self.model_factory, self.prompt_generator, self.options)
         crawler.crawl()
         tree = crawler.get_tree()
 
@@ -144,7 +156,9 @@ class TestModelCrawler(unittest.TestCase):
         self.assertTrue(all(len(nodes_by_depth[d]) > 0 for d in range(1, len(nodes_by_depth))))
     
     def test_dfs_traversal(self):
-        crawler = ModelCrawler(self.model_factory, self.prompt_generator, self.options, strategy=TraversalStrategy.DFS)
+        options = copy(self.options)
+        options.strategy = TraversalStrategy.DFS
+        crawler = ModelCrawler(self.model_factory, self.prompt_generator, self.options)
         crawler.crawl()
         tree = crawler.get_tree()
 

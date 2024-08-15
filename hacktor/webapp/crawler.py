@@ -70,12 +70,7 @@ class ModelCrawlerOptions:
         self.max_depth = max_depth
         self.initial_prompts = initial_prompts
         self.max_steps = max_steps or 100000000 # Some large number
-        self.options.strategy = strategy
-
-class ModelCrawlerResult:
-    
-    def __init__():
-        
+        self.strategy = strategy
 
 
 class ModelCrawler:
@@ -194,12 +189,13 @@ class ModelCrawler:
             node_data = self.tree.nodes[node_id]
             prompt = node_data.get('prompt')
             response = node_data.get('response')
+            template = node_data.get('template')
             
             if prompt is None:
                 print(f"{indent}Root")
             else:
                 # print(f"{indent}Node ID: {node_id}")
-                print(f"{indent}  Prompt: {prompt}")
+                print(f"{indent}  Prompt: {prompt} Template: {template}")
                 # print(f"{indent}  Response: {response}")
                 
             # Recursively print each child node, with increased indentation
