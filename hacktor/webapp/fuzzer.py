@@ -188,6 +188,7 @@ class StatefulModelFuzzer:
         logging.info("Initialized Session..")
         prompt_generator = self._generate_prompts(session, 
                                                   prompt_filter=self.config.prompt_filter)
+        seq_error_count = 0
         try:
             for i, prompt in enumerate(prompt_generator):
                 logging.debug("Generated Prompt: \n%s", prompt.data.content)
@@ -199,11 +200,17 @@ class StatefulModelFuzzer:
                     decoded_prompt_str = base64.b64decode(prompt_str).decode('utf-8')
                 else:
                     decoded_prompt_str = prompt_str
-                
-                # Simulate model output
-                model_output_text = self.model.invoke(decoded_prompt_str)
-                # self._printer.trace(f"[{i+1}] Response: {model_output_text}...")
-                logging.debug("Model Executed: \n%s", model_output_text)
+                try:
+                    # Simulate model output
+                    model_output_text = self.model.invoke(decoded_prompt_str)
+                    # self._printer.trace(f"[{i+1}] Response: {model_output_text}...")
+                    logging.debug("Model Executed: \n%s", model_output_text)
+                except Exception as ex:
+                    seq_error_count += 1
+                    if seq_error_count > 3:
+                        raise ex 
+                    else:
+                        model_output_text=""
                 
                 evaluation_response = None
                 # Evaluate the model interaction

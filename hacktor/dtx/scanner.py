@@ -166,7 +166,7 @@ class InMemoryScannerResults:
         self._results:list[DetoxioResponseEvaluationResult] = []
         self.__parser = DetoxioEvaluationResponseParser()
     
-    def add_result(self, prompt, model_output, evaluation_response, model_name="default"):
+    def add_result(self, prompt:prompts_pb2.Prompt, model_output:str, evaluation_response, model_name="default"):
         eval_res_dict = MessageToDict(evaluation_response)
         
         res:DetoxioResponseEvaluationResult = self.__parser.parse(eval_res_dict)

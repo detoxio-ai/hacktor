@@ -85,14 +85,34 @@ class ScannerOptions:
         self.max_crawling_depth = max_crawling_depth
 
 class GenAIWebScanner:
+    """
+    The main class responsible for scanning web applications, Gradio apps, and mobile apps.
+    It coordinates the scanning process, which includes crawling, model detection, and fuzz testing.
+    """
     rutils = GradioUtils()
-    def __init__(self, options:ScannerOptions, scan_workflow:ScanWorkflow):
+    
+    def __init__(self, options: ScannerOptions, scan_workflow: ScanWorkflow):
+        """
+        Initializes the GenAIWebScanner with the provided options and workflow.
+
+        :param options: Configuration options for the scanner (e.g., session file path, crawling depth).
+        :param scan_workflow: The workflow object managing the different phases of the scanning process.
+        """
         self.options = options
         self.scan_workflow = scan_workflow
         self.printer = scan_workflow.printer
     
     def scan(self, url, scanType="", use_ai=False):
+        """
+        Starts the scanning process based on the type of application (web, Gradio, mobile).
+
+        :param url: The URL of the application to scan.
+        :param scanType: The type of application ("mobileapp" or web app).
+        :param use_ai: Whether to use AI for additional analysis during scanning.
+        :return: The scanning report.
+        """
         self.scan_workflow.start()
+        
         if scanType == "mobileapp":
             return self._scan_mobileapp(url, use_ai=use_ai)
         else:
@@ -104,19 +124,180 @@ class GenAIWebScanner:
                 return self._scan_webapp(url, use_ai=use_ai)
     
     def _scan_gradio_app(self, url, use_ai):
-        # Create model
-        self.scan_workflow.to_crawling()
-        
+        """
+        Scans a Gradio application by detecting its API signature and performing fuzz testing.
+
+        :param url: The URL of the Gradio app to scan.
+        :param use_ai: Whether to use AI for pre-checks and analysis.
+        :return: The scanning report.
+        """
         def create_model():
+            # Detect the Gradio API signature
             api_name, predict_signature = self._detect_gradio_predict_api_signature(url)
+            # Create a GradioAppModel using the detected signature
             model = GradioAppModel(url, api_name, predict_signature, self.options.fuzz_markers)
-            # Train model to learn response structure and how to extract answers
+            # Train the model to learn the response structure
             logging.debug("Learning model response structure")
             model.prechecks(use_ai=use_ai)
             return model
         
+        # Create and scan the model using the stateful model scanning process
         model_factory = MyModelFactory(create_model)
+        return self._scan_stateful_model(model_factory=model_factory)
+
+    def _scan_webapp(self, url, use_ai):
+        """
+        Scans a standard web application by capturing the session and performing fuzz testing.
+
+        :param url: The URL of the web app to scan.
+        :param use_ai: Whether to use AI for pre-checks and analysis.
+        :return: The scanning report.
+        """        
+        # Capture the session by crawling the web app
+        session_file_path = self._capture_session(url)
+
+        if self.options.skip_testing:
+            self.printer.warn("Testing is skipped as per user option provided")
+            return None
+
+        logging.debug("Tests will start soon. Using Recorded Session to perform testing..")
         
+        def create_model():
+            # Convert the captured session into a model for testing
+            conv = Har2WebappRemoteModel(session_file_path, 
+                                     prompt_prefix=self.options.prompt_prefix, 
+                                     fuzz_markers=self.options.fuzz_markers)
+            for model in conv.convert():
+                logging.info("Doing Prechecks..")
+                model.prechecks(use_ai=use_ai)
+                return model
+            return None
+        
+        # Create and scan the model using the stateful model scanning process
+        model_factory = MyModelFactory(create_model)
+        if not model_factory.new():
+            logging.warn("No recorded session found, skipping testing")
+            return None
+        return self._scan_stateful_model(model_factory=model_factory)
+
+    def _scan_mobileapp(self, url, use_ai):
+        """
+        Scans a mobile application by converting Burp Suite requests into a model and performing fuzz testing.
+
+        :param url: The URL of the mobile app to scan.
+        :param use_ai: Whether to use AI for pre-checks and analysis.
+        :return: The scanning report.
+        """
+        logging.debug("Starting tests. Using Recorded Request to perform testing..")
+        
+        # Convert the recorded Burp Suite requests into a mobile app model
+        conv = BurpRequest2MobileAppRemoteModel(url, self.options.session_file_path, 
+                                                prompt_param=self.options.prompt_param, 
+                                                output_field=self.options.output_field)
+        model = conv.convert()
+        
+        logging.info("Doing Prechecks..")
+        model.prechecks(use_ai=use_ai)
+        return self.__scan_model(model)
+
+    def _detect_gradio_predict_api_signature(self, url):
+        """
+        Detects the API signature for a Gradio application, either via API specs or by crawling the UI.
+
+        :param url: The URL of the Gradio app to scan.
+        :return: The detected API endpoint and signature.
+        """
+        try:
+            self.printer.info("Trying to detect endpoint Request / Response Schema via APIs Specs provided by Gradio\n")
+            return self._detect_gradio_predict_api_signature_via_api_spec(url)
+        except Exception as ex:
+            logging.exception(ex)
+        
+        self.printer.info("Trying to detect endpoint Request / Response Schema via Crawling the Gradio UI\n")
+        return self._detect_gradio_predict_api_signature_via_crawling(url)
+
+    def _detect_gradio_predict_api_signature_via_api_spec(self, url):
+        """
+        Detects the API signature of a Gradio application by parsing its API specifications.
+
+        :param url: The URL of the Gradio app to scan.
+        :return: The API endpoint and signature.
+        """
+        return self.rutils.parse_api_signature(url, self.options.fuzz_markers[0])
+
+    def _detect_gradio_predict_api_signature_via_crawling(self, url):
+        """
+        Detects the API signature of a Gradio application by crawling its UI and analyzing the requests made.
+
+        :param url: The URL of the Gradio app to scan.
+        :return: The API endpoint and signature.
+        """
+        predict_signature = {}
+
+        def _handle_request(request):
+            logging.debug(f'>> {request.method} {request.url} \n')  
+            if request.method in ["POST", "PUT"]:
+                post_data = request.post_data
+                # Check if the request contains fuzzing markers
+                if post_data and any(marker in post_data for marker in self.options.fuzz_markers):
+                    try:
+                        logging.debug("Found request to be fuzzed: %s", 
+                                      f'>> {request.method} {request.url} {post_data} \n')
+                        # Extract the signature from the request data
+                        post_data_json = json.loads(post_data)
+                        predict_signature['sig'] = post_data_json.get("data")
+                    except Exception as ex:
+                        logging.exception("Found an error while detecting gradio predict signature", ex)
+        
+        # Capture the session to analyze the requests
+        self._capture_session(url, _handle_request)
+        logging.debug("Identified Gradio Signature", predict_signature)
+        
+        if len(predict_signature) <= 0:
+            logging.warn("[WARNING] Could not detect gradio predict signature. Did you specify [FUZZ] marker?")
+        
+        return "/predict", predict_signature.get('sig')
+
+    def _capture_session(self, url, intercept_request_hook=None):
+        """
+        Uses a browser to capture the session by recording HTTP traffic.
+
+        :param url: The URL of the application to scan.
+        :param intercept_request_hook: A hook function to intercept and process requests during the session.
+        :return: The path to the recorded session file.
+        """
+        session_file_path = self.options.session_file_path
+        
+        if not self.options.skip_crawling:
+            if not session_file_path:
+                outtmp = tempfile.NamedTemporaryFile(prefix="har_file_path", 
+                                                     suffix=".har", 
+                                                     delete=(not self.options.save_session))
+                session_file_path = outtmp.name
+                logging.debug("Crawled Results will stored at a location: %s", session_file_path)
+
+            logging.debug("Starting Browser to record session from User...")
+            logging.warn("Starting Human Assisted Crawler. The system will wait for user to record session. Close the Browser to start scanning")
+            
+            self.printer.info("Starting Browser: Human Assisted Detection of GenAI APIs..")
+            
+            # Launch a browser to record the session
+            crawler = HumanAssistedWebCrawler(headless=self.options.crawler_options.headless, 
+                                              speed=self.options.crawler_options.speed, 
+                                              browser_name=self.options.crawler_options.browser_name)
+            crawler.crawl(url, session_file_path=session_file_path, handle_request_fn=intercept_request_hook)
+            self.printer.info("Completed Crawling...")
+        
+        return session_file_path
+
+    def _scan_stateful_model(self, model_factory: MyModelFactory):
+        """
+        Scans a stateful model using a crawler and a fuzzer to identify vulnerabilities in the model's behavior.
+
+        :param model_factory: A factory that creates instances of the model to be scanned.
+        :return: The scanning report.
+        """
+        # Initialize the model crawler
         crawler = ModelCrawler(
             model_factory=model_factory, 
             prompt_generator=OpenAIPredictNextPrompts(),
@@ -126,6 +307,8 @@ class GenAIWebScanner:
                 max_steps=self.options.max_crawling_steps
             )
         )
+        
+        self.scan_workflow.to_crawling()
         
         # Set up crawling progress bar
         _crawl_bar = self.printer.progress_bar("Crawling", crawler.options.max_steps)
@@ -139,18 +322,20 @@ class GenAIWebScanner:
         def on_crawl_completed(total_nodes):
             self.printer.info(f"Crawling completed. Total nodes processed: {total_nodes}")
         
+        # Attach hooks to the crawler
         crawler.on_crawl_progress = on_crawl_progress
         crawler.on_crawl_completed = on_crawl_completed
         
-        # Start crawling
+        # Start the crawling process
         crawler.crawl()
         crawler.print_tree()
         
-        # Build stateful model from the crawled states
+        # Build a stateful model from the crawled states
         stateful_model = ModelCrawledStateBuilder(crawler=crawler).build()
         
         # Configure the fuzzer
-        fuzz_config = StatefulModelFuzzerConfig(max_tests=10, prompt_filter=self.options.prompt_filter)
+        fuzz_config = StatefulModelFuzzerConfig(max_tests=self.options.no_of_tests, 
+                                                prompt_filter=self.options.prompt_filter)
         fuzzer = StatefulModelFuzzer(config=fuzz_config, model=stateful_model)
 
         # Set up fuzzing progress bar
@@ -159,118 +344,20 @@ class GenAIWebScanner:
         # Fuzzing hooks
         def on_test_completed_hook(prompt, model_output_text, evaluation_response):
             _fuzz_bar.next()
-            self.printer.info(f"Prompt {prompt}\n")
-            self.printer.info(f"Model Response {model_output_text}\n")
+            self.printer.trace(f"Prompt {prompt}\n")
+            self.printer.trace(f"Model Response {model_output_text}\n")
         
         def on_fuzzing_progress(total_tests, new_unsafe_results_found, total_unsafe_results_found):
             if new_unsafe_results_found > 0:
                 self.printer.critical(f"Found {new_unsafe_results_found} new Unsafe Response(s)")
         
+        # Attach hooks to the fuzzer
         fuzzer.on_test_completed = on_test_completed_hook
         fuzzer.on_fuzzing_progress = on_fuzzing_progress
         
         # Run the fuzzing process and return the report
-        return fuzzer.scan()
-
-
-
-
-    def _scan_webapp(self, url, use_ai):
-        self.scan_workflow.to_crawling()
-        session_file_path = self._capture_session(url)
-
-        if self.options.skip_testing:
-            self.printer.warn("Testing is skipped as per user option provided")
-            return None
-
-        logging.debug("Tests will start soon. Using Recorded Session to perform testing..")
-        conv = Har2WebappRemoteModel(session_file_path, 
-                               prompt_prefix=self.options.prompt_prefix, 
-                               fuzz_markers=self.options.fuzz_markers)
-        i = 0
-        for model in conv.convert():
-            i += 1
-            logging.info("Doing Prechecks..")
-            model.prechecks(use_ai=use_ai)
-            return self.__scan_model(model)
-        if i == 0:
-            logging.warn("No requests found in session with Fuzzing Marker %s. Skipping testing..", )
-
-    def _scan_mobileapp(self, url, use_ai):
-
-        logging.debug("Starting tests. Using Recorded Request to perform testing..")
-        conv = BurpRequest2MobileAppRemoteModel(url, self.options.session_file_path, prompt_param=self.options.prompt_param, output_field=self.options.output_field)
-        model = conv.convert()
-        logging.info("Doing Prechecks..")
-        model.prechecks(use_ai=use_ai)
-        return self.__scan_model(model)
-
-    def _detect_gradio_predict_api_signature(self, url):
-        """
-            Predict signature of remote gradio endpoint
-        """
-        try:
-            self.printer.info("Trying to detect endpoint Request / Response Schema via APIs Specs provided by Gradio\n")
-            return self._detect_gradio_predict_api_signature_via_api_spec(url)
-        except Exception as ex:
-            logging.exception(ex)
-        self.printer.info("Trying to detect endpoint Request / Response Schema via Crawling the Gradio UI\n")
-        return self._detect_gradio_predict_api_signature_via_crawling(url)
-
-
-    def _detect_gradio_predict_api_signature_via_api_spec(self, url):
-        """
-            Predict signature of remote gradio endpoint
-        """
-        return self.rutils.parse_api_signature(url, self.options.fuzz_markers[0])
-
-
-    def _detect_gradio_predict_api_signature_via_crawling(self, url):
-        """
-            Predict signature of remote gradio endpoint
-        """
-        predict_signature = {}
-        def _handle_request(request):
-            logging.debug(f'>> {request.method} {request.url} \n')  
-            if request.method in ["POST", "PUT"]:
-                post_data = request.post_data
-                if post_data and any(marker in post_data for marker in self.options.fuzz_markers):
-                    try:
-                        logging.debug("Found request to be fuzzed: %s", 
-                                      f'>> {request.method} {request.url} {post_data} \n')
-                        post_data_json = json.loads(post_data)
-                        predict_signature['sig'] = post_data_json.get("data")
-                    except Exception as ex:
-                        logging.exception("Found an error while detecting gradio predict signature", ex)
-        self._capture_session(url, _handle_request)
-        logging.debug("Identified Gradio Signature", predict_signature)
-        if len(predict_signature) <= 0:
-            logging.warn("[WARNING] Could not detect gradio predict signature. Did you specify [FUZZ] marker?")
-        # print(predict_signature)
-        return "/predict", predict_signature.get('sig')
-
-    def _capture_session(self, url, intercept_request_hook=None):
-        """
-            Use Browser to catpure the session
-        """
-        session_file_path = self.options.session_file_path
-        if not self.options.skip_crawling:
-            if not session_file_path:
-                outtmp = tempfile.NamedTemporaryFile(prefix="har_file_path", 
-                                                     suffix=".har", 
-                                                     delete=(not self.options.save_session))
-                session_file_path = outtmp.name
-                logging.debug("Crawled Results will stored at a location: %s", session_file_path)
-
-            logging.debug("Starting Browser to record session from User...")
-            logging.warn("Starting Human Assisted Crawler. The system will wait for user to record session. Close the Browser to start scanning")
-            self.printer.info("Starting Browser: Human Assisted Detection of GenAI APIs..")
-            crawler = HumanAssistedWebCrawler(headless=self.options.crawler_options.headless, 
-                                                speed=self.options.crawler_options.speed, 
-                                                browser_name=self.options.crawler_options.browser_name)
-            crawler.crawl(url, session_file_path=session_file_path, handle_request_fn=intercept_request_hook)
-            self.printer.info("Completed Crawling...")
-        return session_file_path
+        report = fuzzer.scan()
+        return report
 
     def __scan_model(self, model):
         # Provide your API key or set it as an environment variable

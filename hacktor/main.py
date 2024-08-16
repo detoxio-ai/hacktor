@@ -1,6 +1,7 @@
 import os
 import argparse
 import logging
+import tempfile
 from hacktor.dtx.scanner import DetoxioGeneratorFilterBuilder
 from hacktor.workflow.scanner import (
     GenAIWebScanner, CrawlerOptions, ScannerOptions, FUZZING_MARKERS
@@ -147,6 +148,11 @@ def main():
     scan_workflow = ScanWorkflow(printer)
 
     report = None
+    
+    if not args.session:
+        outtmp = tempfile.NamedTemporaryFile(prefix="har_file_path", 
+                                                        suffix=".har")
+        args.session = outtmp.name
 
     if args.subcommand == 'webapps':
         report = handle_webapps(args, scan_workflow)
