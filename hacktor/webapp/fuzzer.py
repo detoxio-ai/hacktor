@@ -1,4 +1,5 @@
 import logging
+import base64
 from collections import deque
 import networkx as nx
 from typing import Deque, List
@@ -6,7 +7,7 @@ from hacktor.utils.printer import BasePrinter
 from .crawler import ModelCrawler, TraversalStrategy
 from hacktor.dtx.scanner import DetoxioModelDynamicScanner
 from .crawler import ModelCrawlerOptions
-
+import proto.dtx.services.prompts.v1.prompts_pb2 as dtx_prompts_pb2
 
 class ModelCrawledState:
     def __init__(self, crawler: ModelCrawler):
@@ -128,9 +129,11 @@ class ModelCrawledStateBuilder:
 class StatefulModelFuzzerConfig:
     
     def __init__(self, max_tests:int=100, 
-                 detoxio_api_key:str=None):
+                 detoxio_api_key:str=None, 
+                 prompt_filter:dtx_prompts_pb2.PromptGenerationFilterOption=None):
         self.max_tests = max_tests
         self.detoxio_api_key = detoxio_api_key
+        self.prompt_filter = prompt_filter
 
 
 class StatefulModelFuzzer:
@@ -183,16 +186,23 @@ class StatefulModelFuzzer:
     def _scan_single_state(self, session):                
         # Generate prompts
         logging.info("Initialized Session..")
-        prompt_generator = self._generate_prompts(session)
+        prompt_generator = self._generate_prompts(session, 
+                                                  prompt_filter=self.config.prompt_filter)
         try:
             for i, prompt in enumerate(prompt_generator):
                 logging.debug("Generated Prompt: \n%s", prompt.data.content)
                 # self._printer.trace(f"[{i+1}] Generated Prompt: {prompt.data.content[0:100]}...")
                 
+                prompt_str = prompt.data.content
+                prompt_encoding = prompt.source_labels.get("_prompt_encoding")
+                if prompt_encoding == 'base64':
+                    decoded_prompt_str = base64.b64decode(prompt_str).decode('utf-8')
+                else:
+                    decoded_prompt_str = prompt_str
+                
                 # Simulate model output
-                model_output_text = self.model.invoke(prompt.data.content)
+                model_output_text = self.model.invoke(decoded_prompt_str)
                 # self._printer.trace(f"[{i+1}] Response: {model_output_text}...")
-                logging.info("Output %s \n", model_output_text)
                 logging.debug("Model Executed: \n%s", model_output_text)
                 
                 evaluation_response = None
@@ -218,7 +228,7 @@ class StatefulModelFuzzer:
 
                 # Hook for test completion
                 if callable(self.on_test_completed):
-                    self.on_test_completed(prompt.data.content, model_output_text, evaluation_response)
+                    self.on_test_completed(decoded_prompt_str, model_output_text, evaluation_response)
 
         except Exception as ex:
             logging.exception(ex)

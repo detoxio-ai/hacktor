@@ -26,10 +26,9 @@ class DetoxioGeneratorFilterBuilder:
         self._industries:str = "All"
         self._threat_classes:str = "All"
         self._threat_categories:str = "All"
-        self._deceptiveness = "Low"
-
-
-    
+        self._deceptiveness = ""
+        self._lineage = ""
+        
     @classmethod
     def get_threat_classes(self):
         return list(filter(lambda x: "UNSPECIFIED" not in x, map(lambda x: x[0].replace("THREAT_CLASS_", ""), dtx_threat_pb2.ThreatClass.items())))
@@ -97,6 +96,16 @@ class DetoxioGeneratorFilterBuilder:
             raise ValueError(f"Unknown deceptiveness {','.join(possible_values)}")
         self.label("deceptiveness", value.lower())
         self._deceptiveness=value
+        return self
+
+    def lineage(self, value:str):
+        if not value:
+            return self
+        possible_values = ["detoxio.attackio", "detoxio"]
+        if not value or value.lower() not in possible_values:
+            raise ValueError(f"Unknown lineage {value} not in {','.join(possible_values)}")
+        self.label("lineage", value.lower())
+        self._lineage=value
         return self
 
     def build_filter(self):

@@ -67,6 +67,8 @@ class ScannerOptions:
                  output_field="", 
                  skip_testing=False, 
                  fuzz_markers=None,
+                 max_crawling_depth=4,
+                 max_crawling_steps=10,
                  prompt_filter:dtx_prompts_pb2.PromptGenerationFilterOption=None):
         self.session_file_path = session_file_path
         self.skip_crawling = skip_crawling
@@ -79,6 +81,8 @@ class ScannerOptions:
         self.fuzz_markers = fuzz_markers or FUZZING_MARKERS
         self.skip_testing = skip_testing     
         self.prompt_filter:dtx_prompts_pb2.PromptGenerationFilterOption = prompt_filter   
+        self.max_crawling_steps = max_crawling_steps
+        self.max_crawling_depth = max_crawling_depth
 
 class GenAIWebScanner:
     rutils = GradioUtils()
@@ -117,9 +121,9 @@ class GenAIWebScanner:
             model_factory=model_factory, 
             prompt_generator=OpenAIPredictNextPrompts(),
             options=ModelCrawlerOptions(
-                max_depth=4,
+                max_depth=self.options.max_crawling_depth,
                 initial_prompts=["Hello"], 
-                max_steps=10
+                max_steps=self.options.max_crawling_steps
             )
         )
         
@@ -146,7 +150,7 @@ class GenAIWebScanner:
         stateful_model = ModelCrawledStateBuilder(crawler=crawler).build()
         
         # Configure the fuzzer
-        fuzz_config = StatefulModelFuzzerConfig(max_tests=10)
+        fuzz_config = StatefulModelFuzzerConfig(max_tests=10, prompt_filter=self.options.prompt_filter)
         fuzzer = StatefulModelFuzzer(config=fuzz_config, model=stateful_model)
 
         # Set up fuzzing progress bar
@@ -155,6 +159,8 @@ class GenAIWebScanner:
         # Fuzzing hooks
         def on_test_completed_hook(prompt, model_output_text, evaluation_response):
             _fuzz_bar.next()
+            self.printer.info(f"Prompt {prompt}\n")
+            self.printer.info(f"Model Response {model_output_text}\n")
         
         def on_fuzzing_progress(total_tests, new_unsafe_results_found, total_unsafe_results_found):
             if new_unsafe_results_found > 0:
