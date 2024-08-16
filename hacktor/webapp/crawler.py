@@ -77,8 +77,7 @@ class ModelCrawler:
     
     def __init__(self, model_factory: ModelFactory, 
                  prompt_generator: NextPromptGenerator,
-                 options: ModelCrawlerOptions,
-                 printer: BasePrinter = None):
+                 options: ModelCrawlerOptions):
         """
         Initialize ModelCrawler with a model factory, prompt generator, and options.
 
@@ -86,21 +85,27 @@ class ModelCrawler:
         - model_factory (ModelFactory): The factory to create or get model instances.
         - prompt_generator (NextPromptGenerator): The generator for the next prompts.
         - options (ModelCrawlerOptions): Options for crawling, including max depth and initial prompts.
-        - strategy (TraversalStrategy): Strategy for traversal, either BFS or DFS.
-        - printer (BasePrinter): Optional printer object for logging information.
         """
         self.model_factory = model_factory
         self.prompt_generator = prompt_generator
         self.options = options
-        self.printer = printer or BasePrinter()
         
         self.tree = nx.DiGraph()  # Directed graph to represent the conversation tree
         self.node_counter = 0  # To keep track of node ids
-    
+        
+        # Hooks
+        self.on_crawl_started = None
+        self.on_node_processed = None
+        self.on_crawl_completed = None
+        self.on_crawl_progress = None
+
     def crawl(self):
         """
         Start crawling based on the options provided during initialization.
         """
+        if callable(self.on_crawl_started):
+            self.on_crawl_started()
+        
         # Initialize the root of the conversation tree
         root_id = self.node_counter
         self.tree.add_node(root_id, prompt=None, response=None, next_prompts=self.options.initial_prompts)
@@ -112,21 +117,25 @@ class ModelCrawler:
         # Enqueue all initial prompts
         for prompt in self.options.initial_prompts:
             queue.append((root_id, prompt, self.options.max_depth))
-        
-        bar = self.printer.progress_bar("Crawling", len(queue) or 4)
+                
         # Process the queue
         while queue and self.node_counter < self.options.max_steps:
-            # self.printer.info(f"Queue length: {len(queue)}, Processed: {self.node_counter}")
             if self.options.strategy == TraversalStrategy.BFS:
                 parent_id, current_prompt, depth = queue.popleft()
             else:  # DFS
                 parent_id, current_prompt, depth = queue.pop()
-            self.printer.trace(f"Processing Node: {current_prompt} at depth {self.options.max_depth - depth}")
+            # self.printer.trace(f"Processing Node: {current_prompt} at depth {self.options.max_depth - depth}")
             
             processed = self._process_node(queue, parent_id, current_prompt, depth)
             if processed:
-                bar.next(max=self.node_counter+len(queue))
-    
+                # bar.next(max=self.node_counter + len(queue))
+                # Hook for progress
+                if callable(self.on_crawl_progress):
+                    self.on_crawl_progress(self.node_counter, len(queue))
+        
+        if callable(self.on_crawl_completed):
+            self.on_crawl_completed(self.node_counter)
+
     def _process_node(self, queue: Deque[Tuple[int, str, int]], 
                       parent_id: int, 
                       current_prompt: str, 
@@ -139,11 +148,12 @@ class ModelCrawler:
         - parent_id (int): The ID of the parent node in the tree.
         - current_prompt (str): The current prompt to use.
         - depth (int): Remaining depth to traverse.
+        
         Returns:
          - Status whether any node is processed
         """
         if depth == 0:
-            self.printer.trace(f"Reached max depth with prompt: {current_prompt}")
+            # self.printer.trace(f"Reached max depth with prompt: {current_prompt}")
             return False
         
         # Get the current model instance and generate a response
@@ -155,7 +165,7 @@ class ModelCrawler:
         self.tree.add_node(node_id, prompt=current_prompt, response=response, next_prompts=[])
         self.node_counter += 1
         
-        self.printer.trace(f"Generated Response: {response} for Prompt: {current_prompt}")
+        # self.printer.trace(f"Generated Response: {response} for Prompt: {current_prompt}")
 
         # Add an edge from the parent to the current node
         self.tree.add_edge(parent_id, node_id)
@@ -164,8 +174,8 @@ class ModelCrawler:
         next_prompts = self.prompt_generator.next_prompts(current_prompt, response)
         
         if not next_prompts.prompts:
-            self.printer.trace(f"No further prompts for: {current_prompt}, stopping here.")
-            return  # No next prompts, stop further processing
+            # self.printer.trace(f"No further prompts for: {current_prompt}, stopping here.")
+            return False  # No next prompts, stop further processing
         
         # As next prompts are left prioritized, reverse the priority in case of DFS, before inserting
         if self.options.strategy == TraversalStrategy.DFS:
@@ -178,7 +188,12 @@ class ModelCrawler:
         # Enqueue the next prompts
         for next_prompt in next_prompts.prompts:
             queue.append((node_id, next_prompt, depth - 1))
-            self.printer.trace(f"Enqueued next prompt: {next_prompt} at depth {self.options.max_depth - (depth - 1)}")
+            # self.printer.trace(f"Enqueued next prompt: {next_prompt} at depth {self.options.max_depth - (depth - 1)}")
+        
+        # Hook for node processing
+        if callable(self.on_node_processed):
+            self.on_node_processed(current_prompt, response, node_id)
+        
         return True
     
     def print_tree(self):
@@ -194,9 +209,7 @@ class ModelCrawler:
             if prompt is None:
                 print(f"{indent}Root")
             else:
-                # print(f"{indent}Node ID: {node_id}")
                 print(f"{indent}  Prompt: {prompt} Template: {template}")
-                # print(f"{indent}  Response: {response}")
                 
             # Recursively print each child node, with increased indentation
             for child_node in self.tree.successors(node_id):
@@ -210,6 +223,45 @@ class ModelCrawler:
         Return the conversation tree.
         """
         return self.tree
+
+    # Dummy methods for documentation of event hooks
+
+    def on_crawl_started(self):
+        """
+        Called when the crawling process starts.
+        """
+        pass
+
+    def on_node_processed(self, prompt: str, response: str, node_id: int):
+        """
+        Called after a node has been processed.
+        
+        Parameters:
+        - prompt: str - The prompt that was sent to the model.
+        - response: str - The response generated by the model.
+        - node_id: int - The ID of the processed node in the tree.
+        """
+        pass
+
+    def on_crawl_completed(self, total_nodes: int):
+        """
+        Called when the crawling process completes.
+        
+        Parameters:
+        - total_nodes: int - The total number of nodes processed.
+        """
+        pass
+
+    def on_crawl_progress(self, nodes_processed: int, queue_length: int):
+        """
+        Called periodically to report progress during the crawl.
+        
+        Parameters:
+        - nodes_processed: int - The total number of nodes processed so far.
+        - queue_length: int - The current length of the processing queue.
+        """
+        pass
+
 
 
 # Example usage:

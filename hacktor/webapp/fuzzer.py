@@ -5,6 +5,7 @@ from typing import Deque, List
 from hacktor.utils.printer import BasePrinter
 from .crawler import ModelCrawler, TraversalStrategy
 from hacktor.dtx.scanner import DetoxioModelDynamicScanner
+from .crawler import ModelCrawlerOptions
 
 
 class ModelCrawledState:
@@ -27,9 +28,10 @@ class ModelCrawledState:
 
         # Initialize traversal structures based on tree and traversal strategy
         self.nodes_to_visit = self._initialize_nodes_to_visit()
+        self._no_of_states = len(self.nodes_to_visit) + 1
 
     def no_of_states(self) -> int:
-        return len(self.nodes_to_visit)
+        return self._no_of_states
 
     def _initialize_nodes_to_visit(self):
         """
@@ -74,7 +76,7 @@ class ModelCrawledState:
         self.current_prompt_template = self.current_prompt_template or "{message}"
         _prompt = self.current_prompt_template.format(message=prompt)
             
-        print("Template", self.current_prompt_template, "Prompt", _prompt)
+        # print("Template", self.current_prompt_template, "Prompt", _prompt)
         _, response = self.current_model.generate(_prompt)
         return response
     
@@ -125,47 +127,58 @@ class ModelCrawledStateBuilder:
 
 class StatefulModelFuzzerConfig:
     
-    def __init__(self, max_tests:int=100, detoxio_api_key:str=None):
+    def __init__(self, max_tests:int=100, 
+                 detoxio_api_key:str=None):
         self.max_tests = max_tests
         self.detoxio_api_key = detoxio_api_key
 
 
 class StatefulModelFuzzer:
-    def __init__(self, config:StatefulModelFuzzerConfig, 
-                    model:ModelCrawledState, 
-                    printer:BasePrinter):
+    def __init__(self, config: StatefulModelFuzzerConfig, 
+                 model: ModelCrawledState):
         self.config = config 
         self.detoxio_api_key = self.config.detoxio_api_key
         self.model = model
-        self._unsafe_results_found=0
+        self._unsafe_results_found = 0
         self._total_tests = 0
-        self._max_tests = self.config.max_tests
         self._MAX_TESTS = self.config.max_tests
-        self._printer = printer
-        self._bar = self._printer.progress_bar("Fuzzing", self._MAX_TESTS)
+        
         # Calculate number of tests per state
-        self._tests_per_state = max(int(self.model.no_of_states() / self._max_tests), 1)
-    
+        self._tests_per_state = max(int(self._MAX_TESTS / self.model.no_of_states() ), 1)
+
     def plan(self):
-        pass
-    
+        if callable(self.on_planning_started):
+            self.on_planning_started()
+        
+        # Implement your planning logic here
+        
+        if callable(self.on_planning_completed):
+            self.on_planning_completed()
+
     def scan(self):
         self.model.start()
+
+        if callable(self.on_fuzzing_started):
+            self.on_fuzzing_started()
+
         scanner = DetoxioModelDynamicScanner(api_key=self.detoxio_api_key)
         with scanner.new_session() as session:
             self._scan(session)
             report = session.get_report()
+            
+            if callable(self.on_fuzzing_completed):
+                self.on_fuzzing_completed(self._total_tests, self._unsafe_results_found)
+            
             return report
-    
+
     def _scan(self, session):
         self._scan_single_state(session)
         while self._total_tests < self._MAX_TESTS:
             try:
                 self.model.next()
                 self._scan_single_state(session)
-            except StopIteration as si:
+            except StopIteration:
                 break
-        
     
     def _scan_single_state(self, session):                
         # Generate prompts
@@ -174,30 +187,110 @@ class StatefulModelFuzzer:
         try:
             for i, prompt in enumerate(prompt_generator):
                 logging.debug("Generated Prompt: \n%s", prompt.data.content)
-                self._printer.trace(f"[{i+1}] Generated Prompt: {prompt.data.content[0:100]}...")
+                # self._printer.trace(f"[{i+1}] Generated Prompt: {prompt.data.content[0:100]}...")
+                
                 # Simulate model output
                 model_output_text = self.model.invoke(prompt.data.content)
-                self._printer.trace(f"[{i+1}] Response: {model_output_text}...")
+                # self._printer.trace(f"[{i+1}] Response: {model_output_text}...")
                 logging.info("Output %s \n", model_output_text)
                 logging.debug("Model Executed: \n%s", model_output_text)
+                
+                evaluation_response = None
                 # Evaluate the model interaction
-                if len(model_output_text) > 2: # Make sure the output is not empty
+                if len(model_output_text) > 2:  # Make sure the output is not empty
                     evaluation_response = session.evaluate(prompt, model_output_text)
                     logging.debug("Evaluation Response \n%s", evaluation_response)
+                
+                # Check for unsafe results
+                _new_unsafe_results_found = 0
                 if session.get_report().count_unsafe_results() > self._unsafe_results_found:
+                    _new_unsafe_results_found = session.get_report().count_unsafe_results() - self._unsafe_results_found
                     self._unsafe_results_found = session.get_report().count_unsafe_results()
-                    self._printer.critical(f"Total Unsafe Responses {self._unsafe_results_found}")
+                    
+                    # self._printer.critical(f"Total Unsafe Responses {self._unsafe_results_found}")
+                
                 logging.debug("Evaluation Executed...")
                 self._total_tests += 1
-                self._bar.next()
+
+                # Hook for fuzzing progress
+                if callable(self.on_fuzzing_progress):
+                    self.on_fuzzing_progress(self._total_tests, _new_unsafe_results_found, self._unsafe_results_found)
+
+                # Hook for test completion
+                if callable(self.on_test_completed):
+                    self.on_test_completed(prompt.data.content, model_output_text, evaluation_response)
+
         except Exception as ex:
             logging.exception(ex)
             raise ex
 
-
     def _generate_prompts(self, scanner_session, prompt_filter=None):
         logging.debug("Using Detoxio AI Prompts Generation..")
         return scanner_session.generate(count=self._tests_per_state, filter=prompt_filter)
+
+    # event hooks
+
+    # def on_init(self, max_tests: int, no_of_tests_per_state: int):
+    #     """
+    #     Called during initialization of the fuzzer.
+
+    #     Parameters:
+    #     - max_tests: int - The maximum number of tests that will be conducted during fuzzing.
+    #     - no_of_tests_per_state: int - The number of tests to be conducted per state.
+    #     """
+    #     pass
+
+
+    def on_planning_started(self):
+        """
+        Called when the planning phase starts.
+        """
+        pass
+
+    def on_planning_completed(self):
+        """
+        Called when the planning phase is completed.
+        """
+        pass
+
+    def on_fuzzing_started(self):
+        """
+        Called when the fuzzing process starts.
+        """
+        pass
+
+    def on_fuzzing_completed(self, total_tests, unsafe_results_found):
+        """
+        Called when the fuzzing process completes.
+        
+        Parameters:
+        - total_tests: int - The total number of tests executed.
+        - unsafe_results_found: int - The number of unsafe results found during fuzzing.
+        """
+        pass
+
+    def on_fuzzing_progress(self, total_tests, new_unsafe_results_found, total_unsafe_results_found):
+        """
+        Called during fuzzing to report progress.
+        
+        Parameters:
+        - total_tests: int - The total number of tests executed so far.
+        - new_unsafe_results_found: int - New unsafe results found so far
+        - total_unsafe_results_found: int - The number of unsafe results found so far.
+        """
+        pass
+
+    def on_test_completed(self, prompt: str, model_response: str, evaluation: dict):
+        """
+        Called after each test is completed.
+        
+        Parameters:
+        - prompt: str - The prompt that was sent to the model.
+        - model_response: str - The response generated by the model.
+        - evaluation: dict - The result of the evaluation of the model's response.
+        """
+        pass
+
 
 
 # Example usage:

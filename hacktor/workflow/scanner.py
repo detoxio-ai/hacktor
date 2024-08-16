@@ -106,28 +106,68 @@ class GenAIWebScanner:
         def create_model():
             api_name, predict_signature = self._detect_gradio_predict_api_signature(url)
             model = GradioAppModel(url, api_name, predict_signature, self.options.fuzz_markers)
-            # Train model to learn reponse structure and how to extract answer
+            # Train model to learn response structure and how to extract answers
             logging.debug("Learning model response structure")
             model.prechecks(use_ai=use_ai)
             return model
+        
         model_factory = MyModelFactory(create_model)
         
-        crawler = ModelCrawler(model_factory=model_factory, 
-                     prompt_generator=OpenAIPredictNextPrompts(),
-                     options=ModelCrawlerOptions(max_depth=4,
-                                                 initial_prompts=["Hello"], 
-                                                 max_steps=10)
-                     , printer=self.printer
-                     )
+        crawler = ModelCrawler(
+            model_factory=model_factory, 
+            prompt_generator=OpenAIPredictNextPrompts(),
+            options=ModelCrawlerOptions(
+                max_depth=4,
+                initial_prompts=["Hello"], 
+                max_steps=10
+            )
+        )
         
+        # Set up crawling progress bar
+        _crawl_bar = self.printer.progress_bar("Crawling", crawler.options.max_steps)
+        
+        # Crawling hooks
+        
+        def on_crawl_progress(nodes_processed, queue_length):
+            _crawl_bar.next()
+            self.printer.info(f"Crawling progress: {nodes_processed} nodes processed, {queue_length} items in queue.")
+        
+        def on_crawl_completed(total_nodes):
+            self.printer.info(f"Crawling completed. Total nodes processed: {total_nodes}")
+        
+        crawler.on_crawl_progress = on_crawl_progress
+        crawler.on_crawl_completed = on_crawl_completed
+        
+        # Start crawling
         crawler.crawl()
-        crawler.print_tree()        
-        stateful_model = ModelCrawledStateBuilder(crawler=crawler).build()
-        fuzz_config = StatefulModelFuzzerConfig(max_tests=10)
-        fuzzer = StatefulModelFuzzer(config=fuzz_config, model=stateful_model, 
-                                     printer=self.printer)
+        crawler.print_tree()
         
+        # Build stateful model from the crawled states
+        stateful_model = ModelCrawledStateBuilder(crawler=crawler).build()
+        
+        # Configure the fuzzer
+        fuzz_config = StatefulModelFuzzerConfig(max_tests=10)
+        fuzzer = StatefulModelFuzzer(config=fuzz_config, model=stateful_model)
+
+        # Set up fuzzing progress bar
+        _fuzz_bar = self.printer.progress_bar("Fuzzing", fuzz_config.max_tests)
+        
+        # Fuzzing hooks
+        def on_test_completed_hook(prompt, model_output_text, evaluation_response):
+            _fuzz_bar.next()
+        
+        def on_fuzzing_progress(total_tests, new_unsafe_results_found, total_unsafe_results_found):
+            if new_unsafe_results_found > 0:
+                self.printer.critical(f"Found {new_unsafe_results_found} new Unsafe Response(s)")
+        
+        fuzzer.on_test_completed = on_test_completed_hook
+        fuzzer.on_fuzzing_progress = on_fuzzing_progress
+        
+        # Run the fuzzing process and return the report
         return fuzzer.scan()
+
+
+
 
     def _scan_webapp(self, url, use_ai):
         self.scan_workflow.to_crawling()
