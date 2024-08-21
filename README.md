@@ -149,6 +149,17 @@ Specify the Detoxio API Key as above. More information here on [API Docs](https:
 export DETOXIO_API_KEY=xxxx
 ```
 
+Optionally, specify detoxio remote endpoint
+```bash
+export DETOXIO_API_HOST=xxx
+```
+
+Optionally, specify your own OpenAI API key, 
+```bash
+export OPENAI_API_KEY=xxx
+```
+
+
 Run it
 ```bash
 poetry run hacktor mobileapp <URL> -r <Request file path>

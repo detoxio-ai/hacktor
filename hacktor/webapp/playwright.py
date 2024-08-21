@@ -70,7 +70,7 @@ class HumanAssistedWebCrawler:
                     "response", lambda response: logging.debug(
                         f'<< {response.status} {response.url} \n'))
                 page.on("close", lambda: logging.debug("Browser Closed Successfully"))
-                page.on("websocket", self.on_web_socket)
+                # page.on("websocket", self.on_web_socket)
                 await page.goto(url)
                 await page.title()
                 await page.wait_for_selector('text="None"')

@@ -135,11 +135,40 @@ def handle_mobileapp(args, scan_workflow):
     scanner = GenAIWebScanner(scan_options, scan_workflow=scan_workflow)
     return scanner.scan(args.url, scanType="mobileapp", use_ai=args.use_ai)
 
+from urllib.parse import urlunparse
+
+def _create_url(host, port, path):
+    # Determine the scheme based on the port
+    scheme = "https" if port == 443 else "http"
+    netloc = f"{host}:{port}"
+
+    # Create the URL components
+    params = ""
+    query = ""
+    fragment = ""
+
+    # Build the URL
+    url = urlunparse((scheme, netloc, path, params, query, fragment))
+    return str(url)
+
+
+
 def main():
     parser = create_parser()
     args = parser.parse_args()
 
     print("Using AI ", args.use_ai)
+
+    dtx_api_host = os.getenv('DETOXIO_API_HOST', "api.detoxio.ai") 
+    dtx_api_port = os.getenv('DETOXIO_API_PORT', 443) 
+
+    open_api_key = os.getenv('OPENAI_API_KEY')
+    if args.use_ai and not open_api_key:
+        openai_base_url = _create_url(dtx_api_host, dtx_api_port, "dtx.services.llms.v1.LlmPlatformProxyService/openai/v1/")
+        os.environ['OPENAI_BASE_URL'] = openai_base_url
+        os.environ['OPENAI_API_KEY'] = os.getenv('DETOXIO_API_KEY', "")
+        print(openai_base_url)
+        
 
     setup_logging(args)
     check_prerequisites(args)

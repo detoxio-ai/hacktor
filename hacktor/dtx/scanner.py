@@ -133,8 +133,8 @@ class DetoxioModelDynamicScanner(object):
             ValueError: If the API key is not provided.
         """
         # Verify we have an API key or fail fast
-        dtx_api_host = host
-        dtx_api_port = port
+        dtx_api_host = os.getenv('DETOXIO_API_HOST') or host 
+        dtx_api_port = os.getenv('DETOXIO_API_PORT') or port
         detoxio_api_key = api_key or os.getenv('DETOXIO_API_KEY')
         if detoxio_api_key is None:
             raise ValueError('Please set DETOXIO_API_KEY environment variable')
