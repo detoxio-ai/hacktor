@@ -64,6 +64,14 @@ export DETOXIO_API_HOST=xxx
 export OPENAI_API_KEY=xxx
 ```
 
+### Run the tool on Demo Web App
+
+```
+poetry run hacktor webapps https://medusa.detoxio.dev/ --use_ai --max_crawling_steps 10 --no_of_tests 10 --attack_module OWASP-LLM-APP --json report.json --markdown report.md -v
+
+```
+
+
 ## Usage
 
 ### As a GenAI App Scanner
@@ -190,9 +198,13 @@ Streamline GenAI security testing into your CI/CD pipeline, ensuring continuous 
 
 ## Features 
 
-### Human-Assisted Crawling
+### AI Assisted Chat Crawler 
 
-Hacktor involves crawling web applications with human assistance, which is essential for modern web frameworks. This approach involves using a browser to record crawled data and inserting markers like `[FUZZ]` for fuzzing or testing purposes.
+The AI Assisted Chat Crawler in Hacktor leverages advanced AI capabilities to enhance the security testing of GenAI chat applications. By using the --use_ai option, Hacktor intelligently analyzes and interacts with chat interfaces to identify potential vulnerabilities that may not be easily detectable through traditional methods. The AI-driven approach allows for more sophisticated crawling and testing, making it ideal for evaluating the robustness and security of chatbots and other conversational AI systems.
+
+### Human-Assisted Fuzz Location Detection
+
+Hacktor involves detecting fuzzing locaiton in web applications with human assistance, which is essential for modern web frameworks. This approach involves using a browser to record crawled data and inserting markers like `[FUZZ]` for fuzzing or testing purposes.
 
 ### Testing GenAI Chatbot for OWASP TOP 10 Categories
 
