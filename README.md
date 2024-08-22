@@ -1,5 +1,8 @@
 # Hacktor
 
+![Hacktor Demo Short 21 Aug](https://github.com/user-attachments/assets/0cbcf9a5-aaa7-4c77-8851-368ee6c8221b)
+
+
 ## Why does it exist?
 
 Hacktor is a versatile tool for:
