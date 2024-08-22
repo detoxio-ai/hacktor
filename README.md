@@ -74,6 +74,8 @@ poetry run hacktor webapps https://medusa.detoxio.dev/ --use_ai --max_crawling_s
 
 ## Usage
 
+[Watch Detailed Demo](https://youtu.be/HGHMR8UNA0k)
+
 ### As a GenAI App Scanner
 
 Hacktor works as follows:
