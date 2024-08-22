@@ -25,10 +25,16 @@ def check_prerequisites(args):
         return False
     return True
 
+MODULES_LINEAGE_MAP = {
+    "OWASP-LLM-APP":"DETOXIO.ATTACKIO",
+    "LLM-RISKS": "DETOXIO"
+}
+
 def _create_prompt_filter(args):
     filterb = DetoxioGeneratorFilterBuilder()
     filterb = filterb.threat_class(args.threat_class).threat_category(args.threat_category)
-    filterb = filterb.lineage(args.attack_module)
+    attack_module = MODULES_LINEAGE_MAP.get(args.attack_module, "")
+    filterb = filterb.lineage(attack_module)
     filter = filterb.industry(args.industry).deceptiveness(args.deceptiveness).build_filter()
     return filter
 
@@ -64,7 +70,7 @@ Human Assisted Testing of GenAI Apps and Models:
     common_options.add_argument("--threat-class", type=str, choices=threat_classes, help=f"Filter Prompts related to the threat classes.")
     common_options.add_argument("--threat-category", type=str, choices=threat_cats, help=f"Filter Prompts related to the threat categories.")
     common_options.add_argument("--deceptiveness", type=str, choices=["LOW", "MEDIUM", "HIGH"], help="How deceptive the prompts are?")
-    common_options.add_argument("--attack_module", type=str, choices=["DETOXIO.ATTACKIO", "DETOXIO"], help="Activate specific attack modules")
+    common_options.add_argument("--attack_module", type=str, choices=MODULES_LINEAGE_MAP.keys(), help="Activate specific attack modules")
 
     subparsers = parser.add_subparsers(dest='subcommand', help='sub-command help')
 
