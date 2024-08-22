@@ -59,6 +59,7 @@ Human Assisted Testing of GenAI Apps and Models:
     common_options.add_argument("--markdown", type=str, help="Path to store the report of scanning in markdown format")
     common_options.add_argument("-n", "--no_of_tests", type=int, default=10, help="No of Tests to run. Default 10")
     common_options.add_argument("-l", "--log_level", type=str, default="WARN", help="Log Levels - DEBUG, INFO, WARN, ERROR. Default: WARN")
+    common_options.add_argument("-v", "--verbose", action="store_true", help="Show Verbose Output")
     common_options.add_argument("--industry", type=str, choices=industries, help=f"Filter Prompts related to the industry.")
     common_options.add_argument("--threat-class", type=str, choices=threat_classes, help=f"Filter Prompts related to the threat classes.")
     common_options.add_argument("--threat-category", type=str, choices=threat_cats, help=f"Filter Prompts related to the threat categories.")
@@ -157,7 +158,7 @@ def main():
     parser = create_parser()
     args = parser.parse_args()
 
-    print("Using AI ", args.use_ai)
+    # print("Using AI ", args.use_ai)
 
     dtx_api_host = os.getenv('DETOXIO_API_HOST', "api.detoxio.ai") 
     dtx_api_port = os.getenv('DETOXIO_API_PORT', 443) 
@@ -167,13 +168,12 @@ def main():
         openai_base_url = _create_url(dtx_api_host, dtx_api_port, "dtx.services.llms.v1.LlmPlatformProxyService/openai/v1/")
         os.environ['OPENAI_BASE_URL'] = openai_base_url
         os.environ['OPENAI_API_KEY'] = os.getenv('DETOXIO_API_KEY', "")
-        print(openai_base_url)
+        # print(openai_base_url)
         
 
     setup_logging(args)
     check_prerequisites(args)
-
-    printer = Printer(False, False)
+    printer = Printer(False, verbose=args.verbose)
     scan_workflow = ScanWorkflow(printer)
 
     report = None

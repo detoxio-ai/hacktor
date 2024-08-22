@@ -322,9 +322,13 @@ class GenAIWebScanner:
         def on_crawl_completed(total_nodes):
             self.printer.info(f"Crawling completed. Total nodes processed: {total_nodes}")
         
+        def on_node_processed(current_prompt, response, node_id):
+            self.printer.trace(f"[{node_id}]\nCurrent prompt: \n\t {current_prompt} \n Response:\n\t {response}")
+        
         # Attach hooks to the crawler
         crawler.on_crawl_progress = on_crawl_progress
         crawler.on_crawl_completed = on_crawl_completed
+        crawler.on_node_processed = on_node_processed
         
         # Start the crawling process
         crawler.crawl()
@@ -344,8 +348,8 @@ class GenAIWebScanner:
         # Fuzzing hooks
         def on_test_completed_hook(prompt, model_output_text, evaluation_response):
             _fuzz_bar.next()
-            self.printer.trace(f"Prompt {prompt}\n")
-            self.printer.trace(f"Model Response {model_output_text}\n")
+            self.printer.trace(f"\nPrompt:- \n\t{prompt}\n")
+            self.printer.trace(f"Model Response:- \n\t{model_output_text}\n")
         
         def on_fuzzing_progress(total_tests, new_unsafe_results_found, total_unsafe_results_found):
             if new_unsafe_results_found > 0:
