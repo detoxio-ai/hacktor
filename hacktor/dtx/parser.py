@@ -12,7 +12,7 @@ class DetoxioResponseEvaluationResult:
                 Example:
                 {
                     'prompt': {
-                        'generatedAt': '2024-03-12T09:48:52.281643957Z',
+                        'generated_at': '2024-03-12T09:48:52.281643957Z',
                         'data': {
                             'content': '...'
                         }
@@ -23,7 +23,7 @@ class DetoxioResponseEvaluationResult:
                             'message': {'content': '...'},
                             'status': 'THREAT_EVALUATION_STATUS_SAFE',
                             'threats': [
-                                {'threat': {'threatClass': 'TOXICITY', 'threatCategory': 'ABUSIVE_LANGUAGE'}, 'status': 'THREAT_EVALUATION_STATUS_SAFE'},
+                                {'threat': {'threat_class': 'TOXICITY', 'threat_category': 'ABUSIVE_LANGUAGE'}, 'status': 'THREAT_EVALUATION_STATUS_SAFE'},
                                 ...
                             ]
                         },
@@ -83,7 +83,7 @@ class DetoxioResponseEvaluationResult:
             dict: A generator yielding threat dictionaries.
                 Example:
                 {
-                    'threat': {'threatClass': 'TOXICITY', 'threatCategory': 'ABUSIVE_LANGUAGE'},
+                    'threat': {'threat_class': 'TOXICITY', 'threat_category': 'ABUSIVE_LANGUAGE'},
                     'status': 'THREAT_EVALUATION_STATUS_SAFE'
                 }
         """
@@ -105,7 +105,7 @@ class DetoxioResponseEvaluationResult:
                 Example:
                 [
                     {
-                        'threat': {'threatClass': 'TOXICITY', 'threatCategory': 'ABUSIVE_LANGUAGE'},
+                        'threat': {'threat_class': 'TOXICITY', 'threat_category': 'ABUSIVE_LANGUAGE'},
                         'status': 'THREAT_EVALUATION_STATUS_SAFE'
                     }
                 ]
@@ -121,7 +121,7 @@ class DetoxioResponseEvaluationResult:
                 Example:
                 [
                     {
-                        'threat': {'threatClass': 'TOXICITY', 'threatCategory': 'ABUSIVE_LANGUAGE'},
+                        'threat': {'threat_class': 'TOXICITY', 'threat_category': 'ABUSIVE_LANGUAGE'},
                         'status': 'THREAT_EVALUATION_STATUS_SAFE'
                     }
                 ]
@@ -139,7 +139,7 @@ class DetoxioResponseEvaluationResult:
                 ('THREAT_EVALUATION_STATUS_SAFE', 'ABUSIVE_LANGUAGE')
         """
         for threat in self.threats():
-            yield((threat['status'], threat['threat']['threatCategory']))
+            yield((threat['status'], threat['threat']['threat_category']))
             
     def get_threat_class_and_status_pair(self):
         """
@@ -151,7 +151,7 @@ class DetoxioResponseEvaluationResult:
                 ('THREAT_EVALUATION_STATUS_SAFE', 'TOXICITY')
         """
         for threat in self.threats():
-            yield((threat['status'], threat['threat']['threatClass']))
+            yield((threat['status'], threat['threat']['threat_class']))
 
 
     def get_unsafe_threat_categories(self):
@@ -164,7 +164,7 @@ class DetoxioResponseEvaluationResult:
                 ('THREAT_EVALUATION_STATUS_SAFE', 'ABUSIVE_LANGUAGE')
         """
         for threat in self.threats(filter_by_status="THREAT_EVALUATION_STATUS_UNSAFE"):
-            yield(threat['threat']['threatCategory'])
+            yield(threat['threat']['threat_category'])
 
 
     def as_dict(self):

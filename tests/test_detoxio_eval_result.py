@@ -4,7 +4,7 @@ from hacktor.dtx.parser import DetoxioResponseEvaluationResult
 # Sample evaluation result
 RESULT = {
     "prompt": {
-        "generatedAt": "2024-03-12T09:48:52.281643957Z",
+        "generated_at": "2024-03-12T09:48:52.281643957Z",
         "data": {
             "content": "Prompt text"
         }
@@ -16,8 +16,8 @@ RESULT = {
             },
             "status": "THREAT_EVALUATION_STATUS_SAFE",
             "threats": [
-                {"threat": {"threatClass": "TOXICITY", "threatCategory": "ABUSIVE_LANGUAGE"}, "status": "THREAT_EVALUATION_STATUS_SAFE"},
-                {"threat": {"threatClass": "TOXICITY", "threatCategory": "HATE_SPEECH"}, "status": "THREAT_EVALUATION_STATUS_SAFE"}
+                {"threat": {"threat_class": "TOXICITY", "threat_category": "ABUSIVE_LANGUAGE"}, "status": "THREAT_EVALUATION_STATUS_SAFE"},
+                {"threat": {"threat_class": "TOXICITY", "threat_category": "HATE_SPEECH"}, "status": "THREAT_EVALUATION_STATUS_SAFE"}
             ]
         }
     ],
@@ -29,7 +29,7 @@ def test_prompt():
     result = DetoxioResponseEvaluationResult(RESULT)
     prompt = result.prompt()
     assert isinstance(prompt, dict)
-    assert prompt["generatedAt"] == "2024-03-12T09:48:52.281643957Z"
+    assert prompt["generated_at"] == "2024-03-12T09:48:52.281643957Z"
 
 def test_prompt_text():
     result = DetoxioResponseEvaluationResult(RESULT)
@@ -63,10 +63,10 @@ def test_threats():
     result = DetoxioResponseEvaluationResult(RESULT)
     threats = list(result.threats())
     assert len(threats) == 2
-    assert threats[0]["threat"]["threatClass"] == "TOXICITY"
-    assert threats[0]["threat"]["threatCategory"] == "ABUSIVE_LANGUAGE"
-    assert threats[1]["threat"]["threatClass"] == "TOXICITY"
-    assert threats[1]["threat"]["threatCategory"] == "HATE_SPEECH"
+    assert threats[0]["threat"]["threat_class"] == "TOXICITY"
+    assert threats[0]["threat"]["threat_category"] == "ABUSIVE_LANGUAGE"
+    assert threats[1]["threat"]["threat_class"] == "TOXICITY"
+    assert threats[1]["threat"]["threat_category"] == "HATE_SPEECH"
 
 def test_threats_filtered():
     result = DetoxioResponseEvaluationResult(RESULT)
@@ -103,7 +103,7 @@ def test_safe_threats():
     result = DetoxioResponseEvaluationResult(RESULT)
     threats = list(result.safe_threats())
     assert len(threats) == 2
-    assert threats[0]["threat"]["threatClass"] == "TOXICITY"
-    assert threats[0]["threat"]["threatCategory"] == "ABUSIVE_LANGUAGE"
-    assert threats[1]["threat"]["threatClass"] == "TOXICITY"
-    assert threats[1]["threat"]["threatCategory"] == "HATE_SPEECH"
+    assert threats[0]["threat"]["threat_class"] == "TOXICITY"
+    assert threats[0]["threat"]["threat_category"] == "ABUSIVE_LANGUAGE"
+    assert threats[1]["threat"]["threat_class"] == "TOXICITY"
+    assert threats[1]["threat"]["threat_category"] == "HATE_SPEECH"

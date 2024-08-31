@@ -165,9 +165,11 @@ class InMemoryScannerResults:
     def __init__(self):
         self._results:list[DetoxioResponseEvaluationResult] = []
         self.__parser = DetoxioEvaluationResponseParser()
+        self._raw_dtx_result = []
     
     def add_result(self, prompt:prompts_pb2.Prompt, model_output:str, evaluation_response, model_name="default"):
-        eval_res_dict = MessageToDict(evaluation_response)
+        eval_res_dict = MessageToDict(evaluation_response, preserving_proto_field_name=True)
+        self._raw_dtx_result.append(eval_res_dict)
         
         res:DetoxioResponseEvaluationResult = self.__parser.parse(eval_res_dict)
         self._results.append(res)
@@ -238,7 +240,7 @@ class InMemoryScannerResults:
     def _save_json_report(self, out_path):
         if out_path:
             with open(out_path, "w") as out:
-                json.dump(self.as_dict(), out)
+                json.dump(self._raw_dtx_result, out)
 
     def _save_markdown_report(self, out_path):
         if out_path:
