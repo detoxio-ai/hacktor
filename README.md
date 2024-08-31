@@ -1,299 +1,268 @@
 # Hacktor
 
+![Hacktor Demo Short 21 Aug](https://github.com/user-attachments/assets/0cbcf9a5-aaa7-4c77-8851-368ee6c8221b)
+
 ## Why does it exist?
 
-Hacktor is a versatile tool for:
+Hacktor is a versatile tool designed for:
 
 - **Web App Pentesters & Security Engineers**: Security test GenAI Chatbots, Assistants, and Agents.
 - **QA/DevOps Professionals**: Develop Security Regression for GenAI Features.
 
 GenAI Apps Security Testing should cover various Vulnerability Categories (OWASP LLM Top 10), including:
+
 - **Data Leakage**: Assess if your app inadvertently leaks private or sensitive data.
 - **Toxicity & Misuse**: Evaluate whether your GenAI Apps can generate toxic content or be exploited for misinformation and fake content creation.
 - **Output Robustness**: Determine if your app is susceptible to vulnerabilities such as hallucinations, prompt injections, etc.
 
-Refer to Features and Use Case Section for more details
+Refer to the Features and Use Case Section for more details.
 
 ## Getting Started
 
-**Clone and install Hacktor**
+### Clone and Install Hacktor
+
+To get started with Hacktor, first clone the repository and install dependencies:
 
 ```bash
 git clone https://github.com/detoxio/hacktor.git
-cd hacktor 
+cd hacktor
 poetry install
 ```
 
-**Install using pip**
+### Install using pip
+
+Alternatively, you can install Hacktor and its dependencies using pip:
+
 ```bash
 pip install hacktor@git+https://github.com/detoxio/hacktor@main \
     detoxio-api-protocolbuffers-python detoxio_api_grpc_python  \
     --upgrade --extra-index-url https://buf.build/gen/python
 ```
 
-In order to assist in crawling GenAI web app features testing, setup playwright
+### Install Playwright for Web App Feature Testing
+
+To assist in crawling GenAI web app features, install Playwright:
 
 ```bash
 playwright install
 ```
-**Various browsers should be installed including Chromium. Ignore the error at the end**
 
+*Various browsers, including Chromium, should be installed. Ignore the error at the end.*
 
-Install it as a dependency using pip
-```bash
-pip install hacktor@git+https://github.com/detoxio/hacktor detoxio-api-protocolbuffers-python detoxio_api_grpc_python   --upgrade --extra-index-url https://buf.build/gen/python
-```
+### Setup Environment Variables
 
-## Usage
-
-### As GenAI App Scanner
-
-It works as follows: 
-1. Run `python hacktor/main.py webapps <>` to start crawling web applications.
-2. Open a browser window and insert `[FUZZ]` or `[HACKTOR]` in relevant text areas.
-3. Close the browser after recording interactions.
-4. Tool automatically fuzzes requests using recorded prompts.
-5. Generate report summarizing fuzzing results.
-6. Report can be printed to console or saved for further analysis.
-
-**Quick Start**
-
-Specify the Detoxio API Key. More information here on [API Docs](https://docs.detoxio.ai/api/authentication)
+Set up the Detoxio API Key, which is required for using Hacktor:
 
 ```bash
 export DETOXIO_API_KEY=xxxx
 ```
 
-Run it
+Optionally, you can specify the Detoxio remote endpoint and your OpenAI API key:
+
+```bash
+export DETOXIO_API_HOST=xxx
+export OPENAI_API_KEY=xxx
+```
+
+### Run the tool on Demo Web App
+
+```
+poetry run hacktor webapps https://medusa.detoxio.dev/ --use_ai --max_crawling_steps 10 --no_of_tests 10 --attack_module OWASP-LLM-APP --json report.json --markdown report.md -v
+
+```
+
+
+## Usage
+
+[Watch Detailed Demo](https://youtu.be/HGHMR8UNA0k)
+
+### As a GenAI App Scanner
+
+Hacktor works as follows:
+
+1. Run `poetry run hacktor webapps <URL>` to start crawling web applications.
+2. Open a browser window and insert `[FUZZ]` or `[HACKTOR]` in relevant text areas.
+3. Close the browser after recording interactions.
+4. The tool automatically fuzzes requests using recorded prompts.
+5. Generate a report summarizing the fuzzing results.
+6. Reports can be printed to the console or saved for further analysis.
+
+#### Quick Start
+
+To run Hacktor:
+
 ```bash
 poetry run hacktor webapps <URL>
 ```
 
-**Record a Crawling Session**
+#### Record a Crawling Session
+
+To record a crawling session:
+
 ```bash
 hacktor webapps <URL> -s session.har --skip_testing
-cat session.har | grep [FUZZ] | wc -l  
+cat session.har | grep [FUZZ] | wc -l
 ```
-The above command will open the browser. Specify the Fuzzing Marker [FUZZ] in a chat box. Close the browser window to save the session 
 
-**Just Test using Recorded Session**
+The above command will open the browser. Specify the Fuzzing Marker `[FUZZ]` in a chat box. Close the browser window to save the session.
+
+#### Test Using Recorded Session
+
+To run tests using a recorded session:
+
 ```bash
 hacktor webapps <URL> -s session.har --skip_crawling --markdown report.md --json report.json
 ```
-No Browser will open. Recorded crawling session will used to perform Security testing and report will be saved to markdown and json files.
 
-**Specify filters to generate prompts specific to industry or threat class**
+No browser will open. The recorded crawling session will be used to perform security testing, and the report will be saved to markdown and JSON files.
 
-```bash
-hacktor webapps https://69c207a7e69699ce8e.gradio.live/ -s demo.har --skip_crawling --json report.json --threat-class bypass --markdown report.md
-```
+#### Use Attack Module
 
-```bash
-hacktor webapps https://69c207a7e69699ce8e.gradio.live/ -s demo.har --skip_crawling --industry healthcare --json report.json --threat-class bypass
-
-```
-
-
-**Other Options**
-```
-options:
-  -h, --help            show this help message and exit
-  -s SESSION, --session SESSION
-                        Path to session file for storing crawl results
-  --skip_crawling       Skip crawling, use recorded session to test
-  --skip_testing        Skill Testing, possibly just record session
-  --save_session        Save Crawling Session for next time
-  --prompt_prefix PROMPT_PREFIX
-                        Add a prefix to every prompt to make prompts more contextual
-  -m SPEED, --speed SPEED
-                        set time in milliseconds for executions of APIs.
-  -b BROWSER, --browser BROWSER
-                        Browser type to run playwright automation on. Allowed values are Webkit, Firefox and Chromium.
-  --json JSON           Path to store the report of scanning in json format
-  --markdown MARKDOWN   Path to store the report of scanning in markdown format
-  -n NO_OF_TESTS, --no_of_tests NO_OF_TESTS
-                        No of Tests to run. Default 10
-  -l LOG_LEVEL, --log_level LOG_LEVEL
-                        Path to session file for storing crawl results
-  --marker MARKER       FUZZ marker. By Default, the tool will detect any of these markers: [[FUZZ]] [FUZZ] FUZZ <<FUZZ>>
-                        [[HACKTOR]] [HACKTOR] HACKTOR <<HACKTOR>>
-
-  --industry {HEALTHCARE,FINANCE,RETAIL,AGRICULTURE,AUTOMOTIVE,BANKING,BIOTECHNOLOGY,CHEMICALS,CONSTRUCTION ...}
-                        Filter Prompts related to the industry.
-  --threat-class {TOXICITY,MISINFORMATION,INFORMATION_HAZARD,MALICIOUS_USE,HUMAN_COMPUTER_INTERACTION,AUTOMATION_ACCESS_ENVIRONMENTAL,DEFENSE_BYPASS}
-                        Filter Prompts related to the threat classes.
-  --threat-category {ABUSIVE_LANGUAGE,HATE_SPEECH,HARASSMENT,BULLYING,SEXUAL_ASSAULT,PROFANITY,....}
-                        filter prompts related to the threat categories.
-  --deceptiveness {LOW,MEDIUM,HIGH}
-                        How desceptive the promopts are?
-
-```
-
-### As GenAI Mobile Application Scanner
-
-It works as follows: 
-1. Use Burpsuite in tandum with Andoird emulator to intercept request made to GenAI application
-2. Save this request to a file
-3. Run `python hacktor/main.py mobileapp <>` to start testing.
-4. Tool automatically fuzzes requests using recorded prompt. In order to fuzz either:
-    * Replace the input prompt with `[FUZZ]` OR `[HACKTOR]`
-    * Provide a prompt paramtere which is the parameter in the request that maps to the input prompt
-5. Generate report summarizing fuzzing results.
-6. Report can be printed to console or saved for further analysis.
-
-**Quick Start**
-
-Specify the Detoxio API Key as above. More information here on [API Docs](https://docs.detoxio.ai/api/authentication)
+You can specify a particular attack module for more targeted testing:
 
 ```bash
-export DETOXIO_API_KEY=xxxx
+poetry run hacktor webapps <URL> --use_ai --max_crawling_steps 10 --no_of_tests 10 --attack_module OWASP-LLM-APP --json report.json --markdown report.md -v
 ```
 
-Optionally, specify detoxio remote endpoint
-```bash
-export DETOXIO_API_HOST=xxx
-```
+### As a GenAI Mobile Application Scanner
 
-Optionally, specify your own OpenAI API key, 
-```bash
-export OPENAI_API_KEY=xxx
-```
+For mobile app testing:
 
+1. Use Burpsuite with an Android emulator to intercept requests made to the GenAI application.
+2. Save this request to a file.
+3. Run `poetry run hacktor mobileapp <URL> -r <Request file path>` to start testing.
+4. The tool automatically fuzzes requests using the recorded prompt.
+5. Generate a report summarizing the fuzzing results.
+6. Reports can be printed to the console or saved for further analysis.
 
-Run it
+#### Example Command
+
 ```bash
 poetry run hacktor mobileapp <URL> -r <Request file path>
 ```
 
-**Other Options**
-```
+## Additional Options
+
+Here are some other command options available in Hacktor:
+
+```bash
 options:
-  -h, --help            show this help message and exit
-  --prompt_parameter PROMPT_PARAMETER
-                        Parameter which holds the input prompt.
+  -h, --help            Show this help message and exit
+  -s SESSION, --session SESSION
+                        Path to session file for storing crawl results
+  --skip_crawling       Skip crawling, use recorded session to test
+  --skip_testing        Skip testing, possibly just record session
+  --save_session        Save Crawling Session for next time
   --prompt_prefix PROMPT_PREFIX
-                        Add a prefix to every prompt to make prompts more contextual.
-  -r REQUEST, --request REQUEST
-                        Path to input burp request file.
-  --response_param RESPONSE_PARAM
-                        Parameter which holds the GenAI response.
-  --json JSON           Path to store the report of scanning in json format
-  --markdown MARKDOWN   Path to store the report of scanning in markdown format
+                        Add a prefix to every prompt to make prompts more contextual
+  -m SPEED, --speed SPEED
+                        Set time in milliseconds for executions of APIs
+  -b BROWSER, --browser BROWSER
+                        Browser type to run Playwright automation on. Allowed values are Webkit, Firefox, and Chromium
+  --json JSON           Path to store the report of scanning in JSON format
+  --markdown MARKDOWN   Path to store the report of scanning in Markdown format
   -n NO_OF_TESTS, --no_of_tests NO_OF_TESTS
-                        No of Tests to run. Default 10
+                        Number of tests to run. Default 10
   -l LOG_LEVEL, --log_level LOG_LEVEL
-                        Log Levels - DEBUG, INFO, WARN, ERROR. Default: INFO
-```
-
-### As Library
-
-```python
-# Example usage code for DetoxioModelDynamicScanner
-
-# Assuming you have already imported the necessary modules and classes
-
-from hacktor.dtx.scanner import DetoxioModelDynamicScanner
-
-def example_usage():
-    # Provide your API key or set it as an environment variable
-    api_key = ''
-
-    # Create an instance of DetoxioModelDynamicScanner using a context manager
-    scanner = DetoxioModelDynamicScanner(api_key=api_key)
-    with scanner.new_session() as session:
-        # Generate prompts
-        prompt_generator = session.generate(count=5)
-        for prompt in prompt_generator:
-            print(f"Generated Prompt: {prompt}")
-
-            # Simulate model output
-            model_output_text = "This is a simulated model response."
-
-            # Evaluate the model interaction
-            evaluation_response = session.evaluate(prompt, model_output_text)
-
-        # Print the evaluation response
-        print(f"Evaluation: {session.get_report().as_dict()}")
-
-if __name__ == "__main__":
-    example_usage()
+                        Log levels - DEBUG, INFO, WARN, ERROR. Default: INFO
+  --marker MARKER       FUZZ marker. By default, the tool will detect any of these markers: [[FUZZ]], [FUZZ], FUZZ, <<FUZZ>>,
+                        [[HACKTOR]], [HACKTOR], HACKTOR, <<HACKTOR>>
+  --industry {HEALTHCARE,FINANCE,RETAIL,AGRICULTURE,AUTOMOTIVE,BANKING,BIOTECHNOLOGY,CHEMICALS,CONSTRUCTION,...}
+                        Filter prompts related to the industry
+  --threat-class {TOXICITY,MISINFORMATION,INFORMATION_HAZARD,MALICIOUS_USE,HUMAN_COMPUTER_INTERACTION,AUTOMATION_ACCESS_ENVIRONMENTAL,DEFENSE_BYPASS}
+                        Filter prompts related to threat classes
+  --threat-category {ABUSIVE_LANGUAGE,HATE_SPEECH,HARASSMENT,BULLYING,SEXUAL_ASSAULT,PROFANITY,...}
+                        Filter prompts related to threat categories
+  --deceptiveness {LOW,MEDIUM,HIGH}
+                        How deceptive the prompts are?
 ```
 
 ## Use Cases
 
-**Red Teaming GenAI Chatbots**:  Craft toxic prompts to test the resilience of your GenAI chatbots against adversarial attacks. Hacktor aids in evaluating your chatbot's ability to handle unexpected or malicious inputs.
+### Red Teaming GenAI Chatbots
 
-**Mobile GenAI App Security Testing**:  Fortify the security of your GenAI mobile apps.  By combining Hacktor with Burp, a suite of web security testing tools, you can:
+Craft toxic prompts to test the resilience of your GenAI chatbots against adversarial attacks. Hacktor aids in evaluating your chatbot's ability to handle unexpected or malicious inputs.
 
-Decompile the mobile app to understand its inner workings.
-Record requests and responses using Burp to capture the app's interactions.
-Test the captured APIs using Hacktor to identify potential vulnerabilities.
+### Mobile GenAI App Security Testing
 
-**CI/CD Integration for GenAI Testing**:  Streamline GenAI security testing into your CI/CD pipeline, ensuring continuous security throughout the development lifecycle. Hacktor integrates with Playwright, a popular automation framework, to:
+Fortify the security of your GenAI mobile apps. By combining Hacktor with Burpsuite:
 
-Record user sessions within the GenAI application.
-Automatically execute Hacktor tests based on the recorded sessions during the CI/CD process.
+- Decompile the mobile app to understand its inner workings.
+- Record requests and responses using Burp to capture the app's interactions.
+- Test the captured APIs using Hacktor to identify potential vulnerabilities.
+
+### CI/CD Integration for GenAI Testing
+
+Streamline GenAI security testing into your CI/CD pipeline, ensuring continuous security throughout the development lifecycle. Hacktor integrates with Playwright to:
+
+- Record user sessions within the GenAI application.
+- Automatically execute Hacktor tests based on recorded sessions during the CI/CD process.
 
 ## Features 
 
-### Human Assisted Crawling
+### AI Assisted Chat Crawler 
 
-This feature involves crawling web applications with the assistance of a human. Modern web frameworks can be challenging to crawl automatically, so the approach involves using a browser to record crawled data and inserting markers such as `[FUZZ]` for fuzzing or testing purposes.
+The AI Assisted Chat Crawler in Hacktor leverages advanced AI capabilities to enhance the security testing of GenAI chat applications. By using the --use_ai option, Hacktor intelligently analyzes and interacts with chat interfaces to identify potential vulnerabilities that may not be easily detectable through traditional methods. The AI-driven approach allows for more sophisticated crawling and testing, making it ideal for evaluating the robustness and security of chatbots and other conversational AI systems.
 
-### Testing GenAI Chatbot for OWASP TOP 10 categories
+### Human-Assisted Fuzz Location Detection
 
-This feature involves generating various prompts, sending them to a GenAI Chatbot, collecting responses, and evaluating the responses. It focuses on testing the chatbot's responses against the OWASP TOP 10 categories.
+Hacktor involves detecting fuzzing locaiton in web applications with human assistance, which is essential for modern web frameworks. This approach involves using a browser to record crawled data and inserting markers like `[FUZZ]` for fuzzing or testing purposes.
 
+### Testing GenAI Chatbot for OWASP TOP 10 Categories
+
+Hacktor generates various prompts, sends them to a GenAI chatbot, collects responses, and evaluates them, focusing on testing the chatbot's responses against OWASP TOP 10 categories.
 
 ### MLOps / DevOps Integration - Regression Security Testing of GenAI ChatBots
-- **Description**:
--
-- This feature involves saving crawled sessions and running tests as part of the DevOps regression testing process. It focuses on regression security testing of GenAI Chatbots.
+
+Hacktor enables saving crawled sessions and running tests as part of the DevOps regression testing process, focusing on the regression security testing of GenAI chatbots.
 
 ## Powered by 
 
 ### Detoxio APIs for LLM Testing
 
-Follow features are used from Detoxio SDK and APIs [Read API Docs](https://docs.detoxio.ai/) for more details
+Hacktor leverages Detoxio SDK and APIs for features like:
 
-- **Prompt Generation:** Generate toxic prompts using the Testing Platform.
-
-- **Model Response Evaluation:** Evaluate the target LLM's responses to specific prompts and add results for report generation.
-
-- **Toxic Categories Evaluated:**
-  - Threat Class: Toxicity, Threat Categories: Hate Speech, Harassment, Bullying, Profanity, Sexual Assault
+- **Prompt Generation**: Generate toxic prompts using the Testing Platform.
+- **Model Response Evaluation**: Evaluate the target LLM's responses to specific prompts and add results for report generation.
+- **Toxic Categories Evaluated**: 
+  - Threat Class: Toxicity
+  - Threat Categories: Hate Speech, Harassment, Bullying, Profanity, Sexual Assault
   - Malicious Use Categories: Malware Generation, Weaponization, Fraud, Phishing, Theft, Violence, Crime, CBRN
 
-### Playwrite Framework
-We are using [Playwrite](https://playwright.dev/) to record Crawled data 
+### Playwright Framework
 
+Hacktor uses [Playwright](https://playwright.dev/) to record crawled data.
 
-### How to start development
+## How to Start Development
 
-**Clone**
+### Clone the Repository
+
 ```bash
 git clone https://github.com/detoxio/hacktor
 ```
 
-**Install Dependencies**
+### Install Dependencies
+
 ```bash
 pip install poetry
 cd hacktor
 poetry install
 ```
 
-**Develop the code**
+### Develop and Run the Code
 
-**Run it**
+Start developing and running Hacktor:
 
-```bash 
+```bash
 poetry run hacktor
 ```
-[DO NOT FORGET TO SET Detoxio AI API key]
+
+*Ensure that you set the Detoxio AI API key before running.*
 
 ## License
 
-This project is distributed under the Apache License, Version 2.0. See the [LICENSE](LICENSE) file for details.
+This project is distributed under
+
+ the Apache License, Version 2.0. See the [LICENSE](LICENSE) file for details.
 
 © [Detoxio](https://detoxio.ai)
-```
