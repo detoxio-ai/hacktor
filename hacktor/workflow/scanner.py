@@ -3,6 +3,7 @@ import select
 import tempfile
 import json
 import copy
+import os
 from tqdm import tqdm
 import logging
 from addict import Dict
@@ -19,14 +20,23 @@ from hacktor.workflow.phases import ScanWorkflow
 
 from ..webapp.crawler import ModelCrawler, ModelCrawlerOptions
 from ..webapp.ai.predict import OpenAIPredictNextPrompts
-from ..webapp.fuzzer import StatefulModelFuzzerConfig, StatefulModelFuzzer, ModelCrawledStateBuilder
+from ..webapp.fuzzer import (
+    StatefulModelFuzzerConfig, 
+    StatefulModelFuzzer, 
+    ModelCrawledStateBuilder
+)
+
+from dtx_assessment_api.finding_client import (
+    AssessmentFindingClient, 
+    AssessmentFindingBuilder
+)
+from dtx_assessment_api.finding import TargetType
 
 FUZZING_MARKERS = ["[[FUZZ]]", "[FUZZ]", "FUZZ", "<<FUZZ>>", "[[HACKTOR]]", "[HACKTOR]", "HACKTOR", "<<HACKTOR>>"]
 TEMPLATE_PROMPT = { "generatedAt": "2024-03-23T10:41:40.115447256Z", 
                     "data": {"content": ""}, 
                     "sourceLabels": {"domain": "ANY", "category": "ANY"}
                 }  
-
 
 
 class CrawlerOptions:
@@ -84,6 +94,21 @@ class ScannerOptions:
         self.max_crawling_steps = max_crawling_steps
         self.max_crawling_depth = max_crawling_depth
 
+
+class DetoxioEndpoint:
+    
+    def __init__(self, host, port, api_key, scheme="https"):
+        self.host = host
+        self.port = port
+        self.api_key = api_key
+        self.scheme = scheme
+
+    @property
+    def base_url(self):
+        """Constructs and returns the base URL for the endpoint."""
+        return f"{self.scheme}://{self.host}:{self.port}"
+        
+
 class GenAIWebScanner:
     """
     The main class responsible for scanning web applications, Gradio apps, and mobile apps.
@@ -101,6 +126,23 @@ class GenAIWebScanner:
         self.options = options
         self.scan_workflow = scan_workflow
         self.printer = scan_workflow.printer
+        
+        #Create Detoxio endpoint
+        self.dtx_endpoint = self.__get_detoxio_endpoint(options)
+        self.dtx_assess_client = AssessmentFindingClient(self.dtx_endpoint.base_url, 
+                                                         self.dtx_endpoint.api_key)
+        
+        # Create base assessment finding builder (use it to create publish results to detoxio platform)
+        self.tool_name = "Detoxio/Hacktor"
+        self.assessment_finding_builder = AssessmentFindingBuilder() 
+    
+    def __get_detoxio_endpoint(self, options: ScannerOptions):
+        dtx_api_host = os.getenv('DETOXIO_API_HOST') or 'api.detoxio.ai'
+        dtx_api_port = os.getenv('DETOXIO_API_PORT') or 443
+        detoxio_api_key = os.getenv('DETOXIO_API_KEY')
+        if detoxio_api_key is None:
+            raise ValueError('Please set DETOXIO_API_KEY environment variable')
+        return DetoxioEndpoint(host=dtx_api_host, port=dtx_api_port, api_key=detoxio_api_key)
     
     def scan(self, url, scanType="", use_ai=False):
         """
@@ -112,6 +154,19 @@ class GenAIWebScanner:
         :return: The scanning report.
         """
         self.scan_workflow.start()
+        
+        self.assessment_finding_builder = AssessmentFindingBuilder.create_instance_with_default_names(target_url=url,
+                                        tool_name=self.tool_name,
+                                        target_type=TargetType.WEBAPP)
+        # target_type = TargetType.WEBAPP
+        # assessment_title = "GenAI Safety Assessment"
+        # target_name = url
+        # # Build base template to build assessment finding
+        # self.assessment_finding_builder = (self.assessment_finding_builder
+        #             .set_tool_name(self.tool_name)
+        #             .set_assessment_title(assessment_title)
+        #             .set_target(target_type, url, target_name))
+        
         
         if scanType == "mobileapp":
             return self._scan_mobileapp(url, use_ai=use_ai)
@@ -308,6 +363,8 @@ class GenAIWebScanner:
             )
         )
         
+        self.printer.info(f"Assigning Assessment Id for tracking: {self.assessment_finding_builder.run_id}")
+        
         self.scan_workflow.to_crawling()
         
         # Set up crawling progress bar
@@ -340,7 +397,9 @@ class GenAIWebScanner:
         # Configure the fuzzer
         fuzz_config = StatefulModelFuzzerConfig(max_tests=self.options.no_of_tests, 
                                                 prompt_filter=self.options.prompt_filter)
-        fuzzer = StatefulModelFuzzer(config=fuzz_config, model=stateful_model)
+        fuzzer = StatefulModelFuzzer(config=fuzz_config, model=stateful_model, 
+                                     dtx_assess_client=self.dtx_assess_client, 
+                                     assessment_finding_builder=self.assessment_finding_builder)
 
         # Set up fuzzing progress bar
         _fuzz_bar = self.printer.progress_bar("Fuzzing", fuzz_config.max_tests)
@@ -404,7 +463,7 @@ class GenAIWebScanner:
                 raise ex
             self.scan_workflow.to_reporting()
             report = session.get_report()
-            self.scan_workflow.to_Finishing()
+            self.scan_workflow.to_Finishing()  
     
     def _generate_prompts(self, scanner_session):
         """

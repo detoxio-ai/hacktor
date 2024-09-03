@@ -2,12 +2,15 @@ import logging
 import base64
 from collections import deque
 import networkx as nx
-from typing import Deque, List
-from hacktor.utils.printer import BasePrinter
+from google.protobuf.json_format import MessageToDict
 from .crawler import ModelCrawler, TraversalStrategy
 from hacktor.dtx.scanner import DetoxioModelDynamicScanner
-from .crawler import ModelCrawlerOptions
 import proto.dtx.services.prompts.v1.prompts_pb2 as dtx_prompts_pb2
+
+from dtx_assessment_api.finding_client import (
+    AssessmentFindingClient, 
+    AssessmentFindingBuilder
+)
 
 class ModelCrawledState:
     def __init__(self, crawler: ModelCrawler):
@@ -138,7 +141,9 @@ class StatefulModelFuzzerConfig:
 
 class StatefulModelFuzzer:
     def __init__(self, config: StatefulModelFuzzerConfig, 
-                 model: ModelCrawledState):
+                 model: ModelCrawledState, 
+                dtx_assess_client:AssessmentFindingClient, 
+                assessment_finding_builder:AssessmentFindingBuilder):
         self.config = config 
         self.detoxio_api_key = self.config.detoxio_api_key
         self.model = model
@@ -148,6 +153,10 @@ class StatefulModelFuzzer:
         
         # Calculate number of tests per state
         self._tests_per_state = max(int(self._MAX_TESTS / self.model.no_of_states() ), 1)
+        
+        # Detoxio Platform
+        self.dtx_assess_client= dtx_assess_client
+        self.assessment_finding_builder = assessment_finding_builder
 
     def plan(self):
         if callable(self.on_planning_started):
@@ -218,6 +227,9 @@ class StatefulModelFuzzer:
                     evaluation_response = session.evaluate(prompt, model_output_text)
                     logging.debug("Evaluation Response \n%s", evaluation_response)
                 
+                    # Publish results to Detoxio Platform
+                    self._publish_result_to_detoxio_platform(evaluation_response)
+                
                 # Check for unsafe results
                 _new_unsafe_results_found = 0
                 if session.get_report().count_unsafe_results() > self._unsafe_results_found:
@@ -244,6 +256,17 @@ class StatefulModelFuzzer:
     def _generate_prompts(self, scanner_session, prompt_filter=None):
         logging.debug("Using Detoxio AI Prompts Generation..")
         return scanner_session.generate(count=self._tests_per_state, filter=prompt_filter)
+
+    def _publish_result_to_detoxio_platform(self, model_eval_response):   
+        logging.debug("Publishing results to detoxio platform")   
+        eval_res_dict = MessageToDict(model_eval_response, 
+                                      preserving_proto_field_name=True)
+        assessment_finding = (self.assessment_finding_builder
+            .set_record(eval_res_dict)
+            .set_timestamp()
+            .build())
+        self.dtx_assess_client.post(assessment_finding)
+        logging.debug("Results published to detoxio platform") 
 
     # event hooks
 
