@@ -348,13 +348,13 @@ files = [
 
 [[package]]
 name = "dtx-assessment-api"
-version = "0.7.0"
+version = "0.8.0"
 description = "detoxio.ai - Assessment Findings to Platform syncup api client"
 optional = false
 python-versions = "<4.0,>=3.11"
 files = [
-    {file = "dtx_assessment_api-0.7.0-py3-none-any.whl", hash = "sha256:9c809ff6838f775f82093d9dfe931dbb1b9f47e4f64ec0a1faefdce6783850bf"},
-    {file = "dtx_assessment_api-0.7.0.tar.gz", hash = "sha256:455dfa595f602a970f7653ff9732a0e6e9d58299507c2fa150455ff93beaec83"},
+    {file = "dtx_assessment_api-0.8.0-py3-none-any.whl", hash = "sha256:44480f70be0a2fe08cd47dfd987c1eeaf1a36508c02a5d1f9b84c1c56b85d7ba"},
+    {file = "dtx_assessment_api-0.8.0.tar.gz", hash = "sha256:27cbb14313791dbe32b97499688944f42814166a846e314ebd48ddaddfe47b83"},
 ]
 
 [package.dependencies]
@@ -947,13 +947,13 @@ tiktoken = ">=0.7,<1"
 
 [[package]]
 name = "langsmith"
-version = "0.1.109"
+version = "0.1.110"
 description = "Client library to connect to the LangSmith LLM Tracing and Evaluation Platform."
 optional = false
 python-versions = "<4.0,>=3.8.1"
 files = [
-    {file = "langsmith-0.1.109-py3-none-any.whl", hash = "sha256:49fd77eaba5173fadc7361d090722d8bcf6177dd9f27274cd4f47d8478a3ad48"},
-    {file = "langsmith-0.1.109.tar.gz", hash = "sha256:55c387ced8292345f582cc7714931b88130f81652697357306303d1d94cf0cfc"},
+    {file = "langsmith-0.1.110-py3-none-any.whl", hash = "sha256:316d279e3853f5e90e462f9c035eeb468d042f2a21a269c1102d65f3dccdc334"},
+    {file = "langsmith-0.1.110.tar.gz", hash = "sha256:9a619dfe22a67a05a05091f0677b9c842499faec5f051b31afcd901b6627d0a3"},
 ]
 
 [package.dependencies]
@@ -2284,4 +2284,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "84ba194319ef9c3eee0f1b967a5dd7677fd03deb3ac51c2ef34c13627f8a03a0"
+content-hash = "373bd0d8a46785b141d2c0beb8728055a2e0c0bce41f2058c6556d7a914a6943"

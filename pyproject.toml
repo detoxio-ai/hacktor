@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hacktor"
-version = "0.1.0"
+version = "0.2.0"
 description = "LLM models Red Teaming Utility Package"
 authors = ["jchauhan <jitendra@detoxio.ai>"]
 readme = "README.md"
@@ -38,7 +38,7 @@ colorama = "^0.4.6"
 transitions = "^0.9.2"
 langchain-openai = "^0.1.21"
 networkx = "^3.3"
-dtx-assessment-api = "^0.7.0"
+dtx-assessment-api = "^0.8.0"
 
 
 [[tool.poetry.source]]
