@@ -1,15 +1,9 @@
 [tool.poetry]
 name = "hacktor"
-version = "0.2.0"
+version = "0.8.0"
 description = "LLM models Red Teaming Utility Package"
 authors = ["jchauhan <jitendra@detoxio.ai>"]
 readme = "README.md"
-
-[tool.poetry-dynamic-versioning]
-enable = true
-
-[tool.poetry-dynamic-versioning.from-file]
-source = "VERSION"
 
 
 [tool.poetry.dependencies]
@@ -60,8 +54,8 @@ env_list = [
 ]
 
 [build-system]
-requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
-build-backend = "poetry_dynamic_versioning.backend"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
 
 [tool.poetry.scripts]
