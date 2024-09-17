@@ -4,11 +4,11 @@ import logging
 import tempfile
 from hacktor.dtx.scanner import DetoxioGeneratorFilterBuilder
 from hacktor.workflow.scanner import (
-    GenAIWebScanner, CrawlerOptions, ScannerOptions, FUZZING_MARKERS
+    GenAIWebScanner, LLMScanner, CrawlerOptions, ScannerOptions, FUZZING_MARKERS, LLMScannerOptions
 )
 from hacktor.utils.printer import Printer
 from hacktor.workflow.phases import ScanWorkflow
-
+from hacktor.models.wrapper import Registry
 
 def setup_logging(args):
     log_level = getattr(args, 'log_level', 'WARN').upper()
@@ -71,6 +71,10 @@ Human Assisted Testing of GenAI Apps and Models:
     common_options.add_argument("--threat-category", type=str, choices=threat_cats, help=f"Filter Prompts related to the threat categories.")
     common_options.add_argument("--deceptiveness", type=str, choices=["LOW", "MEDIUM", "HIGH"], help="How deceptive the prompts are?")
     common_options.add_argument("--attack_module", type=str, choices=MODULES_LINEAGE_MAP.keys(), help="Activate specific attack modules")
+    common_options.add_argument("--max_crawling_depth", type=int, default=4,  help="Depth of crawling")
+    common_options.add_argument("--max_crawling_steps", type=int, default=10,  help="Number of GenAI States to discover")
+    common_options.add_argument("--initial_crawling_prompt", type=str, default="Hello",  help="Initial Crawling Prompt to start conversation")
+
 
     subparsers = parser.add_subparsers(dest='subcommand', help='sub-command help')
 
@@ -80,9 +84,6 @@ Human Assisted Testing of GenAI Apps and Models:
     webapps_parser.add_argument("-s", "--session", type=str, help="Path to session file for storing crawl results")
     webapps_parser.add_argument("--skip_crawling", action="store_true", help="Skip crawling, use recorded session to test")
     webapps_parser.add_argument("--skip_testing", action="store_true", help="Skip Testing, possibly just record session")
-    webapps_parser.add_argument("--max_crawling_depth", type=int, default=4,  help="Depth of crawling")
-    webapps_parser.add_argument("--max_crawling_steps", type=int, default=10,  help="Number of GenAI States to discover")
-
 
     webapps_parser.add_argument("--save_session", action="store_true", help="Save Crawling Session for next time")
     webapps_parser.add_argument("--use_ai", action="store_true", help="Use AI to perform parsing and crawling, if applicable")
@@ -90,6 +91,15 @@ Human Assisted Testing of GenAI Apps and Models:
     webapps_parser.add_argument("-m", "--speed", type=int, default=300, help="Set time in milliseconds for executions of APIs.")
     webapps_parser.add_argument("-b", "--browser", type=str, help="Browser type to run playwright automation on. Allowed values are Webkit, Firefox, and Chromium.")
     webapps_parser.add_argument("--marker", type=str, default="", help=f"FUZZ marker. By Default, the tool will detect any of these markers: {' '.join(FUZZING_MARKERS)}")
+
+
+    # Subparser for scanning webapps
+    llm_parser = subparsers.add_parser('llm', parents=[common_options], help='Scan web apps')
+    llm_parser.add_argument("registry", type=str, choices=Registry.list_options(), help="Specify LLM Registry")
+    llm_parser.add_argument("uri", type=str, help="Model ID or URL")
+    llm_parser.add_argument("--use_ai", action="store_true", help="Use AI to perform parsing and crawling, if applicable")
+    llm_parser.add_argument("--prompt_prefix", type=str, default="", help="Add a prefix to every prompt to make prompts more contextual")
+
 
     # Subparser for scanning models
     mobileapps_parser = subparsers.add_parser('mobileapp', parents=[common_options], help='Scan burp request from Mobile App.')
@@ -119,9 +129,24 @@ def handle_webapps(args, scan_workflow):
                                   prompt_prefix=args.prompt_prefix,
                                   max_crawling_depth=args.max_crawling_depth,
                                   max_crawling_steps=args.max_crawling_steps,
+                                  initial_crawling_prompts=[args.initial_crawling_prompt],
                                   prompt_filter=prompt_filter_options)
     scanner = GenAIWebScanner(scan_options, scan_workflow=scan_workflow)
     return scanner.scan(args.url, use_ai=args.use_ai)
+
+def handle_llm(args, scan_workflow):
+
+    prompt_filter_options = _create_prompt_filter(args)
+    scan_options = LLMScannerOptions(no_of_tests=args.no_of_tests, 
+                                  prompt_prefix=args.prompt_prefix,
+                                  max_crawling_depth=args.max_crawling_depth,
+                                  max_crawling_steps=args.max_crawling_steps,
+                                  initial_crawling_prompts=[args.initial_crawling_prompt],
+                                  prompt_filter=prompt_filter_options)
+    scanner = LLMScanner(scan_options, scan_workflow=scan_workflow)
+    
+    return scanner.scan(registry=Registry(args.registry), url=args.uri, use_ai=args.use_ai)
+
 
 def handle_mobileapp(args, scan_workflow):
     input_markers = None
@@ -184,7 +209,7 @@ def main():
 
     report = None
     
-    if not args.session:
+    if "session" in args and not args.session:
         outtmp = tempfile.NamedTemporaryFile(prefix="har_file_path", 
                                                         suffix=".har")
         args.session = outtmp.name
@@ -193,6 +218,8 @@ def main():
         report = handle_webapps(args, scan_workflow)
     elif args.subcommand == 'mobileapp':
         report = handle_mobileapp(args, scan_workflow)
+    elif args.subcommand == "llm":
+        report = handle_llm(args, scan_workflow)
     else:
         parser.print_help()
     
@@ -205,3 +232,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+    

@@ -26,11 +26,14 @@ from ..webapp.fuzzer import (
     ModelCrawledStateBuilder
 )
 
+from ..models.wrapper import LLMModel
+
 from dtx_assessment_api.finding_client import (
     AssessmentFindingClient, 
     AssessmentFindingBuilder
 )
 from dtx_assessment_api.finding import TargetType
+from ..models.wrapper import Registry
 
 FUZZING_MARKERS = ["[[FUZZ]]", "[FUZZ]", "FUZZ", "<<FUZZ>>", "[[HACKTOR]]", "[HACKTOR]", "HACKTOR", "<<HACKTOR>>"]
 TEMPLATE_PROMPT = { "generatedAt": "2024-03-23T10:41:40.115447256Z", 
@@ -79,6 +82,7 @@ class ScannerOptions:
                  fuzz_markers=None,
                  max_crawling_depth=4,
                  max_crawling_steps=10,
+                 initial_crawling_prompts=None,
                  prompt_filter:dtx_prompts_pb2.PromptGenerationFilterOption=None):
         self.session_file_path = session_file_path
         self.skip_crawling = skip_crawling
@@ -93,6 +97,27 @@ class ScannerOptions:
         self.prompt_filter:dtx_prompts_pb2.PromptGenerationFilterOption = prompt_filter   
         self.max_crawling_steps = max_crawling_steps
         self.max_crawling_depth = max_crawling_depth
+        self.initial_crawling_prompts = initial_crawling_prompts or ["Hello"]
+
+
+class LLMScannerOptions:
+    def __init__(self, no_of_tests=10, 
+                 prompt_prefix="",
+                 prompt_param="",
+                 max_crawling_depth=4,
+                 max_crawling_steps=10,
+                 initial_crawling_prompts=None,
+                 prompt_filter:dtx_prompts_pb2.PromptGenerationFilterOption=None):
+        self.no_of_tests = no_of_tests
+        self.prompt_prefix = prompt_prefix
+        self.prompt_param = prompt_param
+        self.prompt_filter:dtx_prompts_pb2.PromptGenerationFilterOption = prompt_filter   
+        self.max_crawling_steps = max_crawling_steps
+        self.max_crawling_depth = max_crawling_depth
+        self.initial_crawling_prompts = initial_crawling_prompts or ["Hello"]
+
+
+
 
 
 class DetoxioEndpoint:
@@ -170,6 +195,8 @@ class GenAIWebScanner:
         
         if scanType == "mobileapp":
             return self._scan_mobileapp(url, use_ai=use_ai)
+        elif scanType == "llm":
+            self._scan_llm(registry=self.options, url=url, use_ai=use_ai)
         else:
             if self.rutils.is_gradio_endpoint(url):
                 self.scan_workflow.printer.info("Detected Gradio End Point")
@@ -234,6 +261,28 @@ class GenAIWebScanner:
             logging.warn("No recorded session found, skipping testing")
             return None
         return self._scan_stateful_model(model_factory=model_factory)
+
+    def _scan_llm(self, registry, url, use_ai):
+        """
+        Scans a LLM
+
+        :param registry: Model Registry
+        :param url: The URL of the Gradio app to scan.
+        :param use_ai: Whether to use AI for pre-checks and analysis.
+        :return: The scanning report.
+        """
+        def create_model():
+            # Create a GradioAppModel using the detected signature
+            model = LLMModel(registry, url)
+            # Train the model to learn the response structure
+            # logging.debug("Learning model response structure")
+            # model.prechecks(use_ai=use_ai)
+            return model
+        
+        # Create and scan the model using the stateful model scanning process
+        model_factory = MyModelFactory(create_model)
+        return self._scan_stateful_model(model_factory=model_factory)
+
 
     def _scan_mobileapp(self, url, use_ai):
         """
@@ -358,7 +407,7 @@ class GenAIWebScanner:
             prompt_generator=OpenAIPredictNextPrompts(),
             options=ModelCrawlerOptions(
                 max_depth=self.options.max_crawling_depth,
-                initial_prompts=["Hello"], 
+                initial_prompts=self.options.initial_crawling_prompts, 
                 max_steps=self.options.max_crawling_steps
             )
         )
@@ -585,6 +634,161 @@ class GenAIWebScanner:
         json_string = json.dumps(template_prompt)
         json_format.Parse(json_string, prompt)
         return prompt
+
+
+
+
+class LLMScanner:
+    """
+    The main class responsible for scanning web applications, Gradio apps, and mobile apps.
+    It coordinates the scanning process, which includes crawling, model detection, and fuzz testing.
+    """
+    rutils = GradioUtils()
+    
+    def __init__(self, options: LLMScannerOptions, scan_workflow: ScanWorkflow):
+        """
+        Initializes the GenAIWebScanner with the provided options and workflow.
+
+        :param options: Configuration options for the scanner (e.g., session file path, crawling depth).
+        :param scan_workflow: The workflow object managing the different phases of the scanning process.
+        """
+        self.options = options
+        self.scan_workflow = scan_workflow
+        self.printer = scan_workflow.printer
+        
+        #Create Detoxio endpoint
+        self.dtx_endpoint = self.__get_detoxio_endpoint(options)
+        self.dtx_assess_client = AssessmentFindingClient(self.dtx_endpoint.base_url, 
+                                                         self.dtx_endpoint.api_key)
+        
+        # Create base assessment finding builder (use it to create publish results to detoxio platform)
+        self.tool_name = "Detoxio/Hacktor"
+        self.assessment_finding_builder = AssessmentFindingBuilder() 
+    
+    def __get_detoxio_endpoint(self, options: ScannerOptions):
+        dtx_api_host = os.getenv('DETOXIO_API_HOST') or 'api.detoxio.ai'
+        dtx_api_port = os.getenv('DETOXIO_API_PORT') or 443
+        detoxio_api_key = os.getenv('DETOXIO_API_KEY')
+        if detoxio_api_key is None:
+            raise ValueError('Please set DETOXIO_API_KEY environment variable')
+        return DetoxioEndpoint(host=dtx_api_host, port=dtx_api_port, api_key=detoxio_api_key)
+    
+    def scan(self, registry: Registry, url:str, use_ai=False):
+        """
+        Starts the scanning process based on the type of application (web, Gradio, mobile).
+
+        :param url: The URL of the application to scan.
+        :param scanType: The type of application ("mobileapp" or web app).
+        :param use_ai: Whether to use AI for additional analysis during scanning.
+        :return: The scanning report.
+        """
+        self.scan_workflow.start()
+        
+        self.assessment_finding_builder = AssessmentFindingBuilder.create_instance_with_default_names(target_url=url,
+                                        tool_name=self.tool_name,
+                                        target_type=TargetType.WEBAPP)
+        
+        self._scan_llm(registry=registry, url=url, use_ai=use_ai)
+
+    def _scan_llm(self, registry, url, use_ai):
+        """
+        Scans a LLM
+
+        :param registry: Model Registry
+        :param url: The URL of the Gradio app to scan.
+        :param use_ai: Whether to use AI for pre-checks and analysis.
+        :return: The scanning report.
+        """
+        def create_model():
+            # Create a GradioAppModel using the detected signature
+            model = LLMModel(registry, url)
+            # Train the model to learn the response structure
+            # logging.debug("Learning model response structure")
+            # model.prechecks(use_ai=use_ai)
+            return model
+        
+        # Create and scan the model using the stateful model scanning process
+        model_factory = MyModelFactory(create_model)
+        return self._scan_stateful_model(model_factory=model_factory)
+
+    def _scan_stateful_model(self, model_factory: MyModelFactory):
+        """
+        Scans a stateful model using a crawler and a fuzzer to identify vulnerabilities in the model's behavior.
+
+        :param model_factory: A factory that creates instances of the model to be scanned.
+        :return: The scanning report.
+        """
+        # Initialize the model crawler
+        crawler = ModelCrawler(
+            model_factory=model_factory, 
+            prompt_generator=OpenAIPredictNextPrompts(),
+            options=ModelCrawlerOptions(
+                max_depth=self.options.max_crawling_depth,
+                initial_prompts=self.options.initial_crawling_prompts, 
+                max_steps=self.options.max_crawling_steps
+            )
+        )
+        
+        self.printer.info(f"Assigning Assessment Id for tracking: {self.assessment_finding_builder.run_id}")
+        
+        self.scan_workflow.to_crawling()
+        
+        # Set up crawling progress bar
+        _crawl_bar = self.printer.progress_bar("Crawling", crawler.options.max_steps)
+        
+        # Crawling hooks
+        
+        def on_crawl_progress(nodes_processed, queue_length):
+            _crawl_bar.next()
+            self.printer.info(f"Crawling progress: {nodes_processed} nodes processed, {queue_length} items in queue.")
+        
+        def on_crawl_completed(total_nodes):
+            self.printer.info(f"Crawling completed. Total nodes processed: {total_nodes}")
+        
+        def on_node_processed(current_prompt, response, node_id):
+            self.printer.trace(f"[{node_id}]\nCurrent prompt: \n\t {current_prompt} \n Response:\n\t {response}")
+        
+        # Attach hooks to the crawler
+        crawler.on_crawl_progress = on_crawl_progress
+        crawler.on_crawl_completed = on_crawl_completed
+        crawler.on_node_processed = on_node_processed
+        
+        # Start the crawling process
+        crawler.crawl()
+        crawler.print_tree()
+        
+        # Build a stateful model from the crawled states
+        stateful_model = ModelCrawledStateBuilder(crawler=crawler).build()
+        
+        # Configure the fuzzer
+        fuzz_config = StatefulModelFuzzerConfig(max_tests=self.options.no_of_tests, 
+                                                prompt_filter=self.options.prompt_filter)
+        fuzzer = StatefulModelFuzzer(config=fuzz_config, model=stateful_model, 
+                                     dtx_assess_client=self.dtx_assess_client, 
+                                     assessment_finding_builder=self.assessment_finding_builder)
+
+        # Set up fuzzing progress bar
+        _fuzz_bar = self.printer.progress_bar("Fuzzing", fuzz_config.max_tests)
+        
+        # Fuzzing hooks
+        def on_test_completed_hook(prompt, model_output_text, evaluation_response):
+            _fuzz_bar.next()
+            self.printer.trace(f"\nPrompt:- \n\t{prompt}\n")
+            self.printer.trace(f"Model Response:- \n\t{model_output_text}\n")
+        
+        def on_fuzzing_progress(total_tests, new_unsafe_results_found, total_unsafe_results_found):
+            if new_unsafe_results_found > 0:
+                self.printer.critical(f"Found {new_unsafe_results_found} new Unsafe Response(s)")
+        
+        # Attach hooks to the fuzzer
+        fuzzer.on_test_completed = on_test_completed_hook
+        fuzzer.on_fuzzing_progress = on_fuzzing_progress
+        
+        # Run the fuzzing process and return the report
+        report = fuzzer.scan()
+        return report
+
+
 
 
 
