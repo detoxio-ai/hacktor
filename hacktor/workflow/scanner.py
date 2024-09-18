@@ -686,7 +686,7 @@ class LLMScanner:
         
         self.assessment_finding_builder = AssessmentFindingBuilder.create_instance_with_default_names(target_url=url,
                                         tool_name=self.tool_name,
-                                        target_type=TargetType.WEBAPP)
+                                        target_type=TargetType.MODEL)
         
         self._scan_llm(registry=registry, url=url, use_ai=use_ai)
 
