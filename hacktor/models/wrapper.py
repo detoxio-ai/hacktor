@@ -4,6 +4,12 @@ from enum import Enum
 from .groq import GroqModel
 from .openai import OpenAIModel
 
+import importlib
+# Check if torch is installed, then import HFModelFactory
+torch_spec = importlib.util.find_spec("torch")
+if torch_spec is not None:
+    from .hf import HFModelFactory
+
 class Registry(Enum):
     GROQ = "GROQ"
     OPENAI = "OPENAI"
@@ -23,8 +29,7 @@ class LLMModel:
         elif registry == Registry.OPENAI:
             self.model = OpenAIModel(model_id)
         elif registry == Registry.HF:
-            # Initialize Hugging Face-specific components or configurations here
-            raise Exception("Undefined Hugging Face")
+            self.model = HFModelFactory.get_instance(model_id)
         else:
             raise Exception("Undefined registry" + registry)
 

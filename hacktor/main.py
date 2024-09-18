@@ -135,7 +135,14 @@ def handle_webapps(args, scan_workflow):
     return scanner.scan(args.url, use_ai=args.use_ai)
 
 def handle_llm(args, scan_workflow):
-
+    registry = Registry(args.registry)
+    import importlib
+    # Check if torch is installed, then import HFModelFactory
+    torch_spec = importlib.util.find_spec("torch")
+    if torch_spec is None and registry == Registry.HF:
+        raise ImportError("Torch is not installed. Please install it to use Hugging Face models.")
+        
+        
     prompt_filter_options = _create_prompt_filter(args)
     scan_options = LLMScannerOptions(no_of_tests=args.no_of_tests, 
                                   prompt_prefix=args.prompt_prefix,
@@ -145,7 +152,7 @@ def handle_llm(args, scan_workflow):
                                   prompt_filter=prompt_filter_options)
     scanner = LLMScanner(scan_options, scan_workflow=scan_workflow)
     
-    return scanner.scan(registry=Registry(args.registry), url=args.uri, use_ai=args.use_ai)
+    return scanner.scan(registry=registry, url=args.uri, use_ai=args.use_ai)
 
 
 def handle_mobileapp(args, scan_workflow):
