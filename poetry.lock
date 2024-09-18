@@ -408,13 +408,13 @@ files = [
 
 [[package]]
 name = "dtx-assessment-api"
-version = "0.8.0"
+version = "0.9.1"
 description = "detoxio.ai - Assessment Findings to Platform syncup api client"
 optional = false
 python-versions = "<4.0,>=3.11"
 files = [
-    {file = "dtx_assessment_api-0.8.0-py3-none-any.whl", hash = "sha256:44480f70be0a2fe08cd47dfd987c1eeaf1a36508c02a5d1f9b84c1c56b85d7ba"},
-    {file = "dtx_assessment_api-0.8.0.tar.gz", hash = "sha256:27cbb14313791dbe32b97499688944f42814166a846e314ebd48ddaddfe47b83"},
+    {file = "dtx_assessment_api-0.9.1-py3-none-any.whl", hash = "sha256:aa31225ad94a13bcf54e4394c6a9c075d3d6192386de06b2e0dd9e7683dc14d6"},
+    {file = "dtx_assessment_api-0.9.1.tar.gz", hash = "sha256:8e77b80f4e98521d17ad629f2b0b1b081541ee6811e5d6c726b9dc27044d12c7"},
 ]
 
 [package.dependencies]
@@ -1004,8 +1004,8 @@ jsonpatch = ">=1.33,<2.0"
 langsmith = ">=0.1.117,<0.2.0"
 packaging = ">=23.2,<25"
 pydantic = [
-    {version = ">=2.5.2,<3.0.0", markers = "python_full_version < \"3.12.4\""},
     {version = ">=2.7.4,<3.0.0", markers = "python_full_version >= \"3.12.4\""},
+    {version = ">=2.5.2,<3.0.0", markers = "python_full_version < \"3.12.4\""},
 ]
 PyYAML = ">=5.3"
 tenacity = ">=8.1.0,<8.4.0 || >8.4.0,<9.0.0"
@@ -1057,8 +1057,8 @@ files = [
 httpx = ">=0.23.0,<1"
 orjson = ">=3.9.14,<4.0.0"
 pydantic = [
-    {version = ">=1,<3", markers = "python_full_version < \"3.12.4\""},
     {version = ">=2.7.4,<3.0.0", markers = "python_full_version >= \"3.12.4\""},
+    {version = ">=1,<3", markers = "python_full_version < \"3.12.4\""},
 ]
 requests = ">=2,<3"
 
@@ -1376,8 +1376,8 @@ files = [
 annotated-types = ">=0.6.0"
 pydantic-core = "2.23.3"
 typing-extensions = [
-    {version = ">=4.6.1", markers = "python_version < \"3.13\""},
     {version = ">=4.12.2", markers = "python_version >= \"3.13\""},
+    {version = ">=4.6.1", markers = "python_version < \"3.13\""},
 ]
 
 [package.extras]
@@ -2397,4 +2397,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "7a7a000cb0ba7d8464a1e44ac67ac1c5874d55fca21b21c847cba5a9cbdf1929"
+content-hash = "7afe083a4a0ba538078a6d831ca82bb106da800a081204d051c803a369984422"

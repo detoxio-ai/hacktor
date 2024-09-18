@@ -4,7 +4,7 @@ from collections import deque
 import networkx as nx
 from google.protobuf.json_format import MessageToDict
 from .crawler import ModelCrawler, TraversalStrategy
-from hacktor.dtx.scanner import DetoxioModelDynamicScanner
+from hacktor.dtx.scanner import DetoxioModelDynamicScanner, DetoxioModelDynamicScannerSession
 import proto.dtx.services.prompts.v1.prompts_pb2 as dtx_prompts_pb2
 
 from dtx_assessment_api.finding_client import (
@@ -183,7 +183,7 @@ class StatefulModelFuzzer:
             
             return report
 
-    def _scan(self, session):
+    def _scan(self, session:DetoxioModelDynamicScannerSession):
         self._scan_single_state(session)
         while self._total_tests < self._MAX_TESTS:
             try:
@@ -192,7 +192,7 @@ class StatefulModelFuzzer:
             except StopIteration:
                 break
     
-    def _scan_single_state(self, session):                
+    def _scan_single_state(self, session:DetoxioModelDynamicScannerSession):                
         # Generate prompts
         logging.info("Initialized Session..")
         prompt_generator = self._generate_prompts(session, 
@@ -257,8 +257,9 @@ class StatefulModelFuzzer:
         logging.debug("Using Detoxio AI Prompts Generation..")
         return scanner_session.generate(count=self._tests_per_state, filter=prompt_filter)
 
-    def _publish_result_to_detoxio_platform(self, model_eval_response):   
-        logging.debug("Publishing results to detoxio platform")   
+
+    def _publish_result_to_detoxio_platform(self, model_eval_response:dtx_prompts_pb2.PromptEvaluationResponse):   
+        logging.debug("Publishing results to detoxio platform")  
         eval_res_dict = MessageToDict(model_eval_response, 
                                       preserving_proto_field_name=True)
         assessment_finding = (self.assessment_finding_builder
