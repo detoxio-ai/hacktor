@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hacktor"
-version = "0.9.1"
+version = "0.3.0"
 description = "LLM models Red Teaming Utility Package"
 authors = ["jchauhan <jitendra@detoxio.ai>"]
 readme = "README.md"
