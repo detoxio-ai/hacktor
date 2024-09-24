@@ -34,9 +34,17 @@ poetry install
 Alternatively, you can install Hacktor and its dependencies using pip:
 
 ```bash
+pip install hacktor \
+  detoxio-ai-api-protocolbuffers-python detoxio-ai-api-grpc-python \
+  --upgrade --extra-index-url https://buf.build/gen/python
+```
+
+or the latest code
+
+```bash
 pip install hacktor@git+https://github.com/detoxio/hacktor@main \
-    detoxio-api-protocolbuffers-python detoxio_api_grpc_python  \
-    --upgrade --extra-index-url https://buf.build/gen/python
+  detoxio-ai-api-protocolbuffers-python detoxio-ai-api-grpc-python \
+  --upgrade --extra-index-url https://buf.build/gen/python
 ```
 
 ### Install Playwright for Web App Feature Testing
