@@ -2,6 +2,7 @@ import os
 import argparse
 import logging
 import tempfile
+from urllib.parse import urlunparse
 from hacktor.dtx.scanner import DetoxioGeneratorFilterBuilder
 from hacktor.workflow.scanner import (
     GenAIWebScanner, LLMScanner, CrawlerOptions, ScannerOptions, FUZZING_MARKERS, LLMScannerOptions
@@ -170,11 +171,12 @@ def handle_burp(args, scan_workflow):
                                   prompt_prefix=args.prompt_prefix,
                                   output_field=args.response_param,
                                   prompt_param=args.prompt_parameter or input_markers,
+                                  max_crawling_depth=args.max_crawling_depth,
+                                  max_crawling_steps=args.max_crawling_steps,
+                                  initial_crawling_prompts=[args.initial_crawling_prompt],
                                   prompt_filter=prompt_filter_options)
     scanner = GenAIWebScanner(scan_options, scan_workflow=scan_workflow)
     return scanner.scan(args.url, scanType="burp", use_ai=args.use_ai)
-
-from urllib.parse import urlunparse
 
 def _create_url(host, port, path):
     # Determine the scheme based on the port

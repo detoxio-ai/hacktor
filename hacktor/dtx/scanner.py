@@ -3,7 +3,7 @@ import logging
 import grpc
 import copy
 import json
-
+import base64
 from contextlib import contextmanager
 from typing import Generator
 
@@ -217,6 +217,7 @@ class InMemoryScannerResults:
     
     def add_result(self, prompt:prompts_pb2.Prompt, model_output:str, evaluation_response, model_name="default"):
         eval_res_dict = MessageToDict(evaluation_response, preserving_proto_field_name=True)
+        self._decode_prompt_text_in_eval_result(eval_res_dict)
         self._raw_dtx_result.append(eval_res_dict)
         
         res:DetoxioResponseEvaluationResult = self.__parser.parse(eval_res_dict)
@@ -267,7 +268,9 @@ class InMemoryScannerResults:
             for result in unsafe_results:
 
                 md.append_heading(f"[{i}] Prompt", level=4)
-                md.append_text(f"```{result.prompt_text()}```\n")
+                prompt_text = result.prompt_text()
+                prompt_text = self._attempt_deocode_base64(prompt_text)
+                md.append_text(f"```{prompt_text}```\n")
                 md.append_heading(f"[{i}] Response", level=4)
                 md.append_text(f"```{result.response_text_first()}```\n")
                 md.append_text_indented(f"Threats: {','.join(result.get_unsafe_threat_categories())}\n", depth=0)
@@ -280,6 +283,22 @@ class InMemoryScannerResults:
                 if i >= 10:
                     break
         return md.contents()
+
+    def _decode_prompt_text_in_eval_result(self, record:dict):
+        prompt_dict = record.get("prompt")
+        prompt_str = prompt_dict.get("data").get("content")
+        prompt_encoding = prompt_dict.get("source_labels", {}).get("_prompt_encoding", None)
+        if prompt_encoding == 'base64':
+            decoded_prompt_str = self._attempt_deocode_base64(prompt_str)
+        else:
+            decoded_prompt_str = prompt_str
+        prompt_dict["data"]["content"] = decoded_prompt_str
+
+    def _attempt_deocode_base64(self, text):
+        try:
+            return base64.b64decode(text).decode('utf-8')
+        except Exception as ex:
+            return text
 
     def as_dict(self):
         dict_results = list(map(lambda x: x.as_dict(), self._results))

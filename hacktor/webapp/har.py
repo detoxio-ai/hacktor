@@ -349,7 +349,6 @@ class BurpRequestParser:
                 headers[line.split(': ')[0]] = line.split(': ')[1]
         
         req = RequestModel(method, base_url_path+url, headers, data, ctype)
-        print(req.__dict__)
         return req
 
 class BurpRequest2MobileAppRemoteModel:
