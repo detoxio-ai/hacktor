@@ -102,14 +102,14 @@ Human Assisted Testing of GenAI Apps and Models:
 
 
     # Subparser for scanning models
-    mobileapps_parser = subparsers.add_parser('mobileapp', parents=[common_options], help='Scan burp request from Mobile App.')
-    mobileapps_parser.add_argument("url", type=str, help="Starting URL for crawling.")
-    mobileapps_parser.add_argument("--prompt_parameter", type=str, default="", help="Parameter which holds the input prompt.")
-    mobileapps_parser.add_argument("--prompt_prefix", type=str, default="", help="Add a prefix to every prompt to make prompts more contextual.")
-    mobileapps_parser.add_argument("-r", "--request", type=str, help="Path to input burp request file.")
-    mobileapps_parser.add_argument("--response_param", type=str, help="Parameter which holds the GenAI response.")
-    mobileapps_parser.add_argument("--marker", type=str, default="", help=f"FUZZ marker. By Default, the tool will detect any of these markers: {' '.join(FUZZING_MARKERS)}")
-    mobileapps_parser.add_argument("--use_ai", action="store_true", help="Use AI to perform parsing and crawling, if applicable")
+    burp_parser = subparsers.add_parser('burp', parents=[common_options], help='Scan burp request from Mobile App.')
+    burp_parser.add_argument("url", type=str, help="Starting URL for crawling.")
+    burp_parser.add_argument("--prompt_parameter", type=str, default="", help="Parameter which holds the input prompt.")
+    burp_parser.add_argument("--prompt_prefix", type=str, default="", help="Add a prefix to every prompt to make prompts more contextual.")
+    burp_parser.add_argument("-r", "--request", type=str, help="Path to input burp request file.")
+    burp_parser.add_argument("--response_param", type=str, help="Parameter which holds the GenAI response.")
+    burp_parser.add_argument("--marker", type=str, default="", help=f"FUZZ marker. By Default, the tool will detect any of these markers: {' '.join(FUZZING_MARKERS)}")
+    burp_parser.add_argument("--use_ai", action="store_true", help="Use AI to perform parsing and crawling, if applicable")
     
     return parser
 
@@ -155,7 +155,7 @@ def handle_llm(args, scan_workflow):
     return scanner.scan(registry=registry, url=args.uri, use_ai=args.use_ai)
 
 
-def handle_mobileapp(args, scan_workflow):
+def handle_burp(args, scan_workflow):
     input_markers = None
     if args.marker:
         input_markers = args.marker.split()
@@ -172,7 +172,7 @@ def handle_mobileapp(args, scan_workflow):
                                   prompt_param=args.prompt_parameter or input_markers,
                                   prompt_filter=prompt_filter_options)
     scanner = GenAIWebScanner(scan_options, scan_workflow=scan_workflow)
-    return scanner.scan(args.url, scanType="mobileapp", use_ai=args.use_ai)
+    return scanner.scan(args.url, scanType="burp", use_ai=args.use_ai)
 
 from urllib.parse import urlunparse
 
@@ -223,8 +223,8 @@ def main():
 
     if args.subcommand == 'webapps':
         report = handle_webapps(args, scan_workflow)
-    elif args.subcommand == 'mobileapp':
-        report = handle_mobileapp(args, scan_workflow)
+    elif args.subcommand == 'burp':
+        report = handle_burp(args, scan_workflow)
     elif args.subcommand == "llm":
         report = handle_llm(args, scan_workflow)
     else:

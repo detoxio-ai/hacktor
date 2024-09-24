@@ -174,7 +174,7 @@ class GenAIWebScanner:
         Starts the scanning process based on the type of application (web, Gradio, mobile).
 
         :param url: The URL of the application to scan.
-        :param scanType: The type of application ("mobileapp" or web app).
+        :param scanType: The type of application ("burp" or web app).
         :param use_ai: Whether to use AI for additional analysis during scanning.
         :return: The scanning report.
         """
@@ -193,8 +193,8 @@ class GenAIWebScanner:
         #             .set_target(target_type, url, target_name))
         
         
-        if scanType == "mobileapp":
-            return self._scan_mobileapp(url, use_ai=use_ai)
+        if scanType == "burp":
+            return self._scan_burp(url, use_ai=use_ai)
         elif scanType == "llm":
             self._scan_llm(registry=self.options, url=url, use_ai=use_ai)
         else:
@@ -284,7 +284,7 @@ class GenAIWebScanner:
         return self._scan_stateful_model(model_factory=model_factory)
 
 
-    def _scan_mobileapp(self, url, use_ai):
+    def _scan_burp(self, url, use_ai):
         """
         Scans a mobile application by converting Burp Suite requests into a model and performing fuzz testing.
 
@@ -293,16 +293,25 @@ class GenAIWebScanner:
         :return: The scanning report.
         """
         logging.debug("Starting tests. Using Recorded Request to perform testing..")
+    
+        def create_model():
+            # Convert the recorded Burp Suite requests into a mobile app model
+            conv = BurpRequest2MobileAppRemoteModel(url, self.options.session_file_path, 
+                                                    prompt_param=self.options.prompt_param, 
+                                                    output_field=self.options.output_field)
+            model = conv.convert()
+            
+            logging.info("Doing Prechecks..")
+            model.prechecks(use_ai=use_ai)
+            return model
         
-        # Convert the recorded Burp Suite requests into a mobile app model
-        conv = BurpRequest2MobileAppRemoteModel(url, self.options.session_file_path, 
-                                                prompt_param=self.options.prompt_param, 
-                                                output_field=self.options.output_field)
-        model = conv.convert()
-        
-        logging.info("Doing Prechecks..")
-        model.prechecks(use_ai=use_ai)
-        return self.__scan_model(model)
+        # Create and scan the model using the stateful model scanning process
+        model_factory = MyModelFactory(create_model)
+        if not model_factory.new():
+            logging.warn("No recorded session found, skipping testing")
+            return None
+        return self._scan_stateful_model(model_factory=model_factory)
+
 
     def _detect_gradio_predict_api_signature(self, url):
         """
@@ -678,7 +687,7 @@ class LLMScanner:
         Starts the scanning process based on the type of application (web, Gradio, mobile).
 
         :param url: The URL of the application to scan.
-        :param scanType: The type of application ("mobileapp" or web app).
+        :param scanType: The type of application ("burp" or web app).
         :param use_ai: Whether to use AI for additional analysis during scanning.
         :return: The scanning report.
         """
