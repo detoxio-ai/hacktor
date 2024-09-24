@@ -1,0 +1,37 @@
+POST /v1/inference/text/web HTTP/1.1
+Host: api1.kissangpt.com
+Content-Length: 447
+Sec-Ch-Ua: "Chromium";v="127", "Not)A;Brand";v="99"
+Accept: application/json, text/plain, */*
+Sec-Ch-Ua-Platform: "Linux"
+Accept-Language: en-US
+Sec-Ch-Ua-Mobile: ?0
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.6533.89 Safari/537.36
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryjuuOAcEAkJzvUBBE
+Origin: https://kissan.ai
+Sec-Fetch-Site: cross-site
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: https://kissan.ai/
+Accept-Encoding: gzip, deflate, br
+Priority: u=1, i
+Connection: keep-alive
+
+------WebKitFormBoundaryjuuOAcEAkJzvUBBE
+Content-Disposition: form-data; name="language"
+
+English
+------WebKitFormBoundaryjuuOAcEAkJzvUBBE
+Content-Disposition: form-data; name="question"
+
+[[FUZZ]]
+------WebKitFormBoundaryjuuOAcEAkJzvUBBE
+Content-Disposition: form-data; name="question_prev"
+
+
+------WebKitFormBoundaryjuuOAcEAkJzvUBBE
+Content-Disposition: form-data; name="answer_prev"
+
+
+------WebKitFormBoundaryjuuOAcEAkJzvUBBE--
+
