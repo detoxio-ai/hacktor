@@ -174,7 +174,7 @@ class GenAIWebScanner:
         Starts the scanning process based on the type of application (web, Gradio, mobile).
 
         :param url: The URL of the application to scan.
-        :param scanType: The type of application ("mobileapp" or web app).
+        :param scanType: The type of application ("burp" or web app).
         :param use_ai: Whether to use AI for additional analysis during scanning.
         :return: The scanning report.
         """
@@ -193,8 +193,8 @@ class GenAIWebScanner:
         #             .set_target(target_type, url, target_name))
         
         
-        if scanType == "mobileapp":
-            return self._scan_mobileapp(url, use_ai=use_ai)
+        if scanType == "burp":
+            return self._scan_burp(url, use_ai=use_ai)
         elif scanType == "llm":
             self._scan_llm(registry=self.options, url=url, use_ai=use_ai)
         else:
@@ -284,7 +284,7 @@ class GenAIWebScanner:
         return self._scan_stateful_model(model_factory=model_factory)
 
 
-    def _scan_mobileapp(self, url, use_ai):
+    def _scan_burp(self, url, use_ai):
         """
         Scans a mobile application by converting Burp Suite requests into a model and performing fuzz testing.
 
@@ -687,7 +687,7 @@ class LLMScanner:
         Starts the scanning process based on the type of application (web, Gradio, mobile).
 
         :param url: The URL of the application to scan.
-        :param scanType: The type of application ("mobileapp" or web app).
+        :param scanType: The type of application ("burp" or web app).
         :param use_ai: Whether to use AI for additional analysis during scanning.
         :return: The scanning report.
         """

@@ -124,13 +124,13 @@ You can specify a particular attack module for more targeted testing:
 poetry run hacktor webapps <URL> --use_ai --max_crawling_steps 10 --no_of_tests 10 --attack_module OWASP-LLM-APP --json report.json --markdown report.md -v
 ```
 
-### As a GenAI Mobile Application Scanner
+### Augment your Burp Scanner
 
-For mobile app testing:
+Test any burp recorded http request testing:
 
-1. Use Burpsuite with an Android emulator to intercept requests made to the GenAI application.
+1. Use Burpsuite to intercept requests made to the GenAI application.
 2. Save this request to a file.
-3. Run `poetry run hacktor mobileapp <URL> -r <Request file path>` to start testing.
+3. Run `poetry run hacktor burp <URL> -r <Request file path>` to start testing.
 4. The tool automatically fuzzes requests using the recorded prompt.
 5. Generate a report summarizing the fuzzing results.
 6. Reports can be printed to the console or saved for further analysis.
@@ -138,43 +138,7 @@ For mobile app testing:
 #### Example Command
 
 ```bash
-poetry run hacktor mobileapp <URL> -r <Request file path>
-```
-
-## Additional Options
-
-Here are some other command options available in Hacktor:
-
-```bash
-options:
-  -h, --help            Show this help message and exit
-  -s SESSION, --session SESSION
-                        Path to session file for storing crawl results
-  --skip_crawling       Skip crawling, use recorded session to test
-  --skip_testing        Skip testing, possibly just record session
-  --save_session        Save Crawling Session for next time
-  --prompt_prefix PROMPT_PREFIX
-                        Add a prefix to every prompt to make prompts more contextual
-  -m SPEED, --speed SPEED
-                        Set time in milliseconds for executions of APIs
-  -b BROWSER, --browser BROWSER
-                        Browser type to run Playwright automation on. Allowed values are Webkit, Firefox, and Chromium
-  --json JSON           Path to store the report of scanning in JSON format
-  --markdown MARKDOWN   Path to store the report of scanning in Markdown format
-  -n NO_OF_TESTS, --no_of_tests NO_OF_TESTS
-                        Number of tests to run. Default 10
-  -l LOG_LEVEL, --log_level LOG_LEVEL
-                        Log levels - DEBUG, INFO, WARN, ERROR. Default: INFO
-  --marker MARKER       FUZZ marker. By default, the tool will detect any of these markers: [[FUZZ]], [FUZZ], FUZZ, <<FUZZ>>,
-                        [[HACKTOR]], [HACKTOR], HACKTOR, <<HACKTOR>>
-  --industry {HEALTHCARE,FINANCE,RETAIL,AGRICULTURE,AUTOMOTIVE,BANKING,BIOTECHNOLOGY,CHEMICALS,CONSTRUCTION,...}
-                        Filter prompts related to the industry
-  --threat-class {TOXICITY,MISINFORMATION,INFORMATION_HAZARD,MALICIOUS_USE,HUMAN_COMPUTER_INTERACTION,AUTOMATION_ACCESS_ENVIRONMENTAL,DEFENSE_BYPASS}
-                        Filter prompts related to threat classes
-  --threat-category {ABUSIVE_LANGUAGE,HATE_SPEECH,HARASSMENT,BULLYING,SEXUAL_ASSAULT,PROFANITY,...}
-                        Filter prompts related to threat categories
-  --deceptiveness {LOW,MEDIUM,HIGH}
-                        How deceptive the prompts are?
+poetry run hacktor burp <URL> -r <Request file path>
 ```
 
 ## Use Cases
