@@ -293,16 +293,25 @@ class GenAIWebScanner:
         :return: The scanning report.
         """
         logging.debug("Starting tests. Using Recorded Request to perform testing..")
+    
+        def create_model():
+            # Convert the recorded Burp Suite requests into a mobile app model
+            conv = BurpRequest2MobileAppRemoteModel(url, self.options.session_file_path, 
+                                                    prompt_param=self.options.prompt_param, 
+                                                    output_field=self.options.output_field)
+            model = conv.convert()
+            
+            logging.info("Doing Prechecks..")
+            model.prechecks(use_ai=use_ai)
+            return model
         
-        # Convert the recorded Burp Suite requests into a mobile app model
-        conv = BurpRequest2MobileAppRemoteModel(url, self.options.session_file_path, 
-                                                prompt_param=self.options.prompt_param, 
-                                                output_field=self.options.output_field)
-        model = conv.convert()
-        
-        logging.info("Doing Prechecks..")
-        model.prechecks(use_ai=use_ai)
-        return self.__scan_model(model)
+        # Create and scan the model using the stateful model scanning process
+        model_factory = MyModelFactory(create_model)
+        if not model_factory.new():
+            logging.warn("No recorded session found, skipping testing")
+            return None
+        return self._scan_stateful_model(model_factory=model_factory)
+
 
     def _detect_gradio_predict_api_signature(self, url):
         """
