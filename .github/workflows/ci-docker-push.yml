@@ -1,0 +1,42 @@
+name: Container Image Releaser
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'VERSION'
+      - '.github/workflows/ci-docker-push.yml'
+
+env:
+  DOCKER_IMAGE_NAME: hacktor
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Read version from VERSION file
+      id: read_version
+      run: echo "VERSION=$(cat ${{VERSION)" >> $GITHUB_ENV
+
+        name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build Docker image
+      run: |
+        docker build . --tag detoxio/${{ env.DOCKER_IMAGE_NAME }}:${{ env.VERSION }}
+        docker build . --tag detoxio/${{ env.DOCKER_IMAGE_NAME }}:latest
+
+    - name: Push Docker image
+      run: |
+        docker push --tag detoxio/${{ env.DOCKER_IMAGE_NAME }}:${{ env.VERSION }}
+        docker push --tag detoxio/${{ env.DOCKER_IMAGE_NAME }}:latest
