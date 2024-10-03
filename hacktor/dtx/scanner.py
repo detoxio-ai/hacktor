@@ -102,7 +102,7 @@ class DetoxioGeneratorFilterBuilder:
     def lineage(self, value:str):
         if not value:
             return self
-        possible_values = ["detoxio.attackio", "detoxio"]
+        possible_values = ["detoxio.attackio", "detoxio", "detoxio.jailbreakbench"]
         if not value or value.lower() not in possible_values:
             raise ValueError(f"Unknown lineage {value} not in {','.join(possible_values)}")
         self.label("lineage", value.lower())

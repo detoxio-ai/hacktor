@@ -28,7 +28,8 @@ def check_prerequisites(args):
 
 MODULES_LINEAGE_MAP = {
     "OWASP-LLM-APP":"DETOXIO.ATTACKIO",
-    "LLM-RISKS": "DETOXIO"
+    "LLM-RISKS": "DETOXIO",
+    "JAILBREAK-BENCH": "DETOXIO.JAILBREAKBENCH"
 }
 
 def _create_prompt_filter(args):
