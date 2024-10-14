@@ -19,12 +19,21 @@ class GroqModel(BaseModel):
         "gemma-7b": "gemma-7b-it",
         "whisper-large-v3": "whisper-large-v3",
         "gemma2-9b": "gemma2-9b-it",
-        "llama3-groq-70b": "Ilama3-groq-70b-8192-tool-use-preview",
-        "llama3-groq-8b": "Ilama3-groq-8b-8192-tool-use-preview",
+        "llama3-groq-70b": "llama3-groq-70b-8192-tool-use-preview",
+        "llama3-groq-8b": "llama3-groq-8b-8192-tool-use-preview",
         "distil-whisper-large-v3": "distil-whisper-large-v3-en",
-        "llama-3.1-70b": "Ilama-3.1-70b-versatile",
-        "llama-3.1-8b": "Ilama-3.1-8b-instant",
-        "llama-guard-3-8b": "Ilama-guard-3-8b",
+        "llama-3.1-70b": "llama-3.1-70b-versatile",
+        "llama-3.1-8b": "llama-3.1-8b-instant",
+        "llama-guard-3-8b": "llama-guard-3-8b",
+        "llama-3.2-11b-text-preview": "llama-3.2-11b-text-preview",
+        "llama-3.2-11b-vision-preview": "llama-3.2-11b-vision-preview",
+        "llama-3.2-1b-preview": "llama-3.2-1b-preview",
+        "llama-3.2-3b-preview": "llama-3.2-3b-preview",
+        "llama-3.2-90b-text-preview": "llama-3.2-90b-text-preview",
+        "llava-v1.5-7b": "llava-v1.5-7b-4096-preview",
+        "llama-3.2-11b": "llama-3.2-11b-text-preview",  # Alias for clarity
+        "llama-3.2-90b": "llama-3.2-90b-text-preview",  # Alias for clarity
+        "whisper-large-v3-turbo": "whisper-large-v3-turbo",
     }
     
     DEFAULT_MODEL_PARAMS = {
