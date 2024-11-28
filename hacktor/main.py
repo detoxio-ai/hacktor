@@ -29,7 +29,8 @@ def check_prerequisites(args):
 MODULES_LINEAGE_MAP = {
     "OWASP-LLM-APP":"DETOXIO.ATTACKIO",
     "LLM-RISKS": "DETOXIO",
-    "JAILBREAK-BENCH": "DETOXIO.JAILBREAKBENCH"
+    "JAILBREAK-BENCH": "DETOXIO.JAILBREAKBENCH",
+    "ADVBENCH": "DETOXIO.ADVBENCH",
 }
 
 def _create_prompt_filter(args):
@@ -164,18 +165,18 @@ def handle_burp(args, scan_workflow):
 
     prompt_filter_options = _create_prompt_filter(args)
     scan_options = ScannerOptions(session_file_path=args.request, 
-                                  skip_crawling=True, 
-                                  skip_testing=False, 
-                                  save_session=False, 
-                                  crawler_options=None, 
-                                  no_of_tests=args.no_of_tests, 
-                                  prompt_prefix=args.prompt_prefix,
-                                  output_field=args.response_param,
-                                  prompt_param=args.prompt_parameter or input_markers,
-                                  max_crawling_depth=args.max_crawling_depth,
-                                  max_crawling_steps=args.max_crawling_steps,
-                                  initial_crawling_prompts=[args.initial_crawling_prompt],
-                                  prompt_filter=prompt_filter_options)
+                                skip_crawling=True, 
+                                skip_testing=False, 
+                                save_session=False, 
+                                crawler_options=None, 
+                                no_of_tests=args.no_of_tests, 
+                                prompt_prefix=args.prompt_prefix,
+                                output_field=args.response_param,
+                                prompt_param=args.prompt_parameter or input_markers,
+                                max_crawling_depth=args.max_crawling_depth,
+                                max_crawling_steps=args.max_crawling_steps,
+                                initial_crawling_prompts=[args.initial_crawling_prompt],
+                                prompt_filter=prompt_filter_options)
     scanner = GenAIWebScanner(scan_options, scan_workflow=scan_workflow)
     return scanner.scan(args.url, scanType="burp", use_ai=args.use_ai)
 
