@@ -33,6 +33,8 @@ class GroqModel(BaseModel):
         "llava-v1.5-7b": "llava-v1.5-7b-4096-preview",
         "llama-3.2-11b": "llama-3.2-11b-text-preview",  # Alias for clarity
         "llama-3.2-90b": "llama-3.2-90b-text-preview",  # Alias for clarity
+        "llama-3.3-70b-versatile": "llama-3.3-70b-versatile",
+        "llama-3.3-70b-specdec": "llama-3.3-70b-specdec",
         "whisper-large-v3-turbo": "whisper-large-v3-turbo",
     }
     

@@ -132,6 +132,16 @@ class GradioAppModel:
         res =  self._generate_raw(prompt)
         return self._response_parser.parse(prompt, res)
     
+    
+    def run(self, prompt, ignore_this=None):
+        """
+        Method to provid compatible interface as models run method
+        """
+        res =  self._generate_raw(prompt)
+        raw_response, parsed_response = self._response_parser.parse(prompt, res)
+        return parsed_response or raw_response
+        
+    
     def prechecks(self, use_ai=False):
         """
         Perform prechecks to determine the location of the marker in the response.
@@ -221,6 +231,8 @@ class ModelResponseParser:
         """
         self._content_type = content_type
         self._location = location
+        self._rutils = GradioUtils()
+
     
     def parse(self, prompt, response):
         """

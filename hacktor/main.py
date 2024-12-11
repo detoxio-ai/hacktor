@@ -99,7 +99,8 @@ Human Assisted Testing of GenAI Apps and Models:
     # Subparser for scanning webapps
     llm_parser = subparsers.add_parser('llm', parents=[common_options], help='Scan web apps')
     llm_parser.add_argument("registry", type=str, choices=Registry.list_options(), help="Specify LLM Registry")
-    llm_parser.add_argument("uri", type=str, help="Model ID or URL")
+    llm_parser.add_argument("uri", type=str, help="Location of the model being hosted and accessible")
+    llm_parser.add_argument("--model_id", type=str, help="Model ID, in case, id is different from url")    
     llm_parser.add_argument("--use_ai", action="store_true", help="Use AI to perform parsing and crawling, if applicable")
     llm_parser.add_argument("--prompt_prefix", type=str, default="", help="Add a prefix to every prompt to make prompts more contextual")
 
@@ -155,7 +156,7 @@ def handle_llm(args, scan_workflow):
                                   prompt_filter=prompt_filter_options)
     scanner = LLMScanner(scan_options, scan_workflow=scan_workflow)
     
-    return scanner.scan(registry=registry, url=args.uri, use_ai=args.use_ai)
+    return scanner.scan(registry=registry, url=args.uri, use_ai=args.use_ai, model_id=args.model_id)
 
 
 def handle_burp(args, scan_workflow):
@@ -200,8 +201,6 @@ def main():
     parser = create_parser()
     args = parser.parse_args()
 
-    # print("Using AI ", args.use_ai)
-
     dtx_api_host = os.getenv('DETOXIO_API_HOST', "api.detoxio.ai") 
     dtx_api_port = os.getenv('DETOXIO_API_PORT', 443) 
 
@@ -209,9 +208,7 @@ def main():
     if args.use_ai and not open_api_key:
         openai_base_url = _create_url(dtx_api_host, dtx_api_port, "dtx.services.llms.v1.LlmPlatformProxyService/openai/v1/")
         os.environ['OPENAI_BASE_URL'] = openai_base_url
-        os.environ['OPENAI_API_KEY'] = os.getenv('DETOXIO_API_KEY', "")
-        # print(openai_base_url)
-        
+        os.environ['OPENAI_API_KEY'] = os.getenv('DETOXIO_API_KEY', "")        
 
     setup_logging(args)
     check_prerequisites(args)

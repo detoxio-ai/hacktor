@@ -34,6 +34,7 @@ networkx = "^3.3"
 dtx-assessment-api = "^0.10.0"
 langchain-openai = "^0.2.0"
 langchain-groq = "^0.2.0"
+openai = "^1.57.0"
 
 
 [[tool.poetry.source]]

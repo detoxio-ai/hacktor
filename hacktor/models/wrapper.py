@@ -1,8 +1,11 @@
 
 
 from enum import Enum
+from typing import List
 from .groq import GroqModel
 from .openai import OpenAIModel
+from hacktor.webapp.gradio import GradioUtils
+from hacktor.webapp.model import GradioAppModel
 
 import importlib
 # Check if torch is installed, then import HFModelFactory
@@ -14,6 +17,7 @@ class Registry(Enum):
     GROQ = "GROQ"
     OPENAI = "OPENAI"
     HF = "HF"  # Hugging Face
+    HF_SPACE = "HF_SPACE"
 
     @classmethod
     def list_options(cls):
@@ -21,8 +25,8 @@ class Registry(Enum):
 
 class LLMModel:
 
-    def __init__(self, registry, model_id):
-        
+    def __init__(self, registry, model_id, fuzz_markers:List[str], use_ai:bool=False):
+        rutils = GradioUtils()
         # Placeholder for future registry-specific setup
         if registry == Registry.GROQ:
             self.model = GroqModel(model_id)
@@ -30,6 +34,11 @@ class LLMModel:
             self.model = OpenAIModel(model_id)
         elif registry == Registry.HF:
             self.model = HFModelFactory.get_instance(model_id)
+        elif registry == Registry.HF_SPACE:
+            api_name, predict_signature = rutils.parse_api_signature(model_id, fuzz_markers[0])
+            # Detect the Gradio API signature
+            self.model = GradioAppModel(model_id, api_name, predict_signature, fuzz_markers)
+            self.model.prechecks(use_ai=use_ai)
         else:
             raise Exception("Undefined registry" + registry)
 

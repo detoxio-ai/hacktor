@@ -273,7 +273,7 @@ class GenAIWebScanner:
         """
         def create_model():
             # Create a GradioAppModel using the detected signature
-            model = LLMModel(registry, url)
+            model = LLMModel(registry, url, fuzz_markers=self.options.fuzz_markers, use_ai=use_ai)
             # Train the model to learn the response structure
             # logging.debug("Learning model response structure")
             # model.prechecks(use_ai=use_ai)
@@ -682,7 +682,7 @@ class LLMScanner:
             raise ValueError('Please set DETOXIO_API_KEY environment variable')
         return DetoxioEndpoint(host=dtx_api_host, port=dtx_api_port, api_key=detoxio_api_key)
     
-    def scan(self, registry: Registry, url:str, use_ai=False):
+    def scan(self, registry: Registry, url:str, use_ai=False, model_id=None):
         """
         Starts the scanning process based on the type of application (web, Gradio, mobile).
 
@@ -695,6 +695,7 @@ class LLMScanner:
         
         self.assessment_finding_builder = AssessmentFindingBuilder.create_instance_with_default_names(target_url=url,
                                         tool_name=self.tool_name,
+                                        model_id=model_id,
                                         target_type=TargetType.MODEL)
         
         self._scan_llm(registry=registry, url=url, use_ai=use_ai)
@@ -710,7 +711,7 @@ class LLMScanner:
         """
         def create_model():
             # Create a GradioAppModel using the detected signature
-            model = LLMModel(registry, url)
+            model = LLMModel(registry, url, fuzz_markers=FUZZING_MARKERS, use_ai=use_ai)
             # Train the model to learn the response structure
             # logging.debug("Learning model response structure")
             # model.prechecks(use_ai=use_ai)
@@ -719,6 +720,7 @@ class LLMScanner:
         # Create and scan the model using the stateful model scanning process
         model_factory = MyModelFactory(create_model)
         return self._scan_stateful_model(model_factory=model_factory)
+
 
     def _scan_stateful_model(self, model_factory: MyModelFactory):
         """
