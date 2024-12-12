@@ -201,6 +201,7 @@ class OrParser:
         - parser: An instance of a parser class with a `parse` method.
         """
         self.parsers.append(parser)
+        return self
 
     def parse(self, prompt: str, raw_response: str):
         """
@@ -412,8 +413,7 @@ class ModelResponseParserBuilder:
         _marker = self._random_string(12)
         
         if use_ai:
-            chained_parser = OrParser().add_parser(AIModelResponseParser(), ModelConversationParser())
-            _response_parser = AIModelResponseParser()
+            _response_parser = OrParser().add_parser(AIModelResponseParser()).add_parser(ModelConversationParser())
         else:
             _response_parser = ModelResponseParser()
 
