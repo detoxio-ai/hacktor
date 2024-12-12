@@ -139,7 +139,7 @@ class GradioAppModel:
         """
         res =  self._generate_raw(prompt)
         raw_response, parsed_response = self._response_parser.parse(prompt, res)
-        return parsed_response or raw_response
+        return parsed_response 
         
     
     def prechecks(self, use_ai=False):
