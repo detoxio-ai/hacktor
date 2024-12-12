@@ -3,7 +3,6 @@ import logging
 import requests
 import string
 import random
-from urllib.parse import urlparse
 from retry import retry
 from gradio_client import Client
 from .gradio import GradioUtils
@@ -139,9 +138,10 @@ class GradioAppModel:
         """
         res =  self._generate_raw(prompt)
         raw_response, parsed_response = self._response_parser.parse(prompt, res)
+        if not parsed_response:
+            return ModelConversationParser().parse(prompt, raw_response)
         return parsed_response 
         
-    
     def prechecks(self, use_ai=False):
         """
         Perform prechecks to determine the location of the marker in the response.
@@ -188,6 +188,40 @@ class GradioAppModel:
             arguements.append(value)
         return arguements
 
+class OrParser:
+    
+    def __init__(self):
+        self.parsers = []
+
+    def add_parser(self, parser):
+        """
+        Add a parser to the list.
+
+        Parameters:
+        - parser: An instance of a parser class with a `parse` method.
+        """
+        self.parsers.append(parser)
+
+    def parse(self, prompt: str, raw_response: str):
+        """
+        Attempt each parser in sequence until one returns a non-empty result.
+
+        Parameters:
+        - prompt: The prompt string to provide context.
+        - raw_response: The raw response to be parsed.
+
+        Returns:
+        - tuple: A tuple containing the parsed content and model response.
+        """
+        for parser in self.parsers:
+            try:
+                content, model_response = parser.parse(prompt, raw_response)
+                if model_response:
+                    return content, model_response
+            except Exception as ex:
+                logging.error("Error in parser %s: %s", parser.__class__.__name__, ex)
+        return raw_response, ""
+
 class AIModelResponseParser:
     
     def __init__(self):
@@ -217,6 +251,43 @@ class AIModelResponseParser:
             logging.warn("Error will using AI to extract response %s", ex)
         return content_text_without_prompt, model_response
         
+
+class ModelConversationParser:
+    
+    def parse(self, prompt:str, raw_response:str):
+        """
+        Recursively traverse a JSON structure to find the last 'assistant' role content.
+
+        :param data: The JSON structure (can be a dict or list)
+        :return: The content of the last 'assistant' role, or None if not found
+        """
+        if type(raw_response) in [str]:
+            try:
+                data = json.loads(raw_response)
+            except Exception as ex:
+                return raw_response, ""
+            
+        if isinstance(data, dict):
+            # Check if the current dict has 'role' as 'assistant'
+            if data.get('role') == 'assistant' and 'content' in data:
+                return raw_response, data['content']
+
+            # Otherwise, recursively check all the values
+            for value in data.values():
+                result = self.parse(prompt, value)
+                if result:
+                    return raw_response, result
+
+        elif isinstance(data, list):
+            # Traverse the list in reverse to get the last occurrence
+            for item in reversed(data):
+                result = self.parse(prompt, item)
+                if result:
+                    return raw_response, result
+
+        return raw_response, ""
+
+
         
 class ModelResponseParser:
     """A class to parse model responses and extract relevant information."""
@@ -339,7 +410,9 @@ class ModelResponseParserBuilder:
          - ModelResponseParser: ModelResponseParser with type 'json', 'jsonl' or 'text'
         """
         _marker = self._random_string(12)
+        
         if use_ai:
+            chained_parser = OrParser().add_parser(AIModelResponseParser(), ModelConversationParser())
             _response_parser = AIModelResponseParser()
         else:
             _response_parser = ModelResponseParser()
