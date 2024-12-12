@@ -271,7 +271,9 @@ class ModelConversationParser:
         if isinstance(data, dict):
             # Check if the current dict has 'role' as 'assistant'
             if data.get('role') == 'assistant' and 'content' in data:
-                return raw_response, data['content']
+                content = data['content'] or ""
+                content = content.replace(prompt, "")
+                return raw_response, content
 
             # Otherwise, recursively check all the values
             for value in data.values():
