@@ -248,6 +248,7 @@ class AIModelResponseParser:
         model_response = ""
         try:
             model_response = self.ai_parser.extract_response(prompt, response_content)
+            model_response = model_response.replace(prompt, "")
         except Exception as ex:
             logging.warn("Error will using AI to extract response %s", ex)
         return content_text_without_prompt, model_response
