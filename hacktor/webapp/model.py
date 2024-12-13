@@ -263,6 +263,7 @@ class ModelConversationParser:
         :param data: The JSON structure (can be a dict or list)
         :return: The content of the last 'assistant' role, or None if not found
         """
+        data = raw_response
         if type(raw_response) in [str]:
             try:
                 data = json.loads(raw_response)
