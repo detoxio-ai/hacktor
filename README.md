@@ -17,7 +17,22 @@ GenAI Apps Security Testing should cover various Vulnerability Categories (OWASP
 
 Refer to the Features and Use Case Section for more details.
 
-## Getting Started
+## Quick Start 
+
+**Pull the latest image**
+```
+docker pull docker.io/detoxio/hacktor:latest
+```
+**Run it**
+Change API key as appripriate
+```
+docker run --rm -e DETOXIO_API_KEY=xxxxxxx  docker.io/detoxio/hacktor:latest webapps https://medusa.detoxio.dev/ --use_ai --max_crawling_steps 10 --no_of_tests 10 --attack_module OWASP-LLM-APP --json report.json --markdown report.md -v
+```
+
+>> Get the API Key here - https://detoxio.ai/contact_us
+
+
+## Install without Docker
 
 ### Clone and Install Hacktor
 
@@ -47,16 +62,6 @@ pip install hacktor@git+https://github.com/detoxio/hacktor@main \
   --upgrade --extra-index-url https://buf.build/gen/python
 ```
 
-### Install Playwright for Web App Feature Testing
-
-To assist in crawling GenAI web app features, install Playwright:
-
-```bash
-playwright install
-```
-
-*Various browsers, including Chromium, should be installed. Ignore the error at the end.*
-
 ### Setup Environment Variables
 
 Set up the Detoxio API Key, which is required for using Hacktor:
@@ -65,19 +70,21 @@ Set up the Detoxio API Key, which is required for using Hacktor:
 export DETOXIO_API_KEY=xxxx
 ```
 
-Optionally, you can specify the Detoxio remote endpoint and your OpenAI API key:
-
-```bash
-export DETOXIO_API_HOST=xxx
-export OPENAI_API_KEY=xxx
-```
-
 ### Run the tool on Demo Web App
 
 ```
 poetry run hacktor webapps https://medusa.detoxio.dev/ --use_ai --max_crawling_steps 10 --no_of_tests 10 --attack_module OWASP-LLM-APP --json report.json --markdown report.md -v
-
 ```
+
+### Optionally, Install Playwright for Web App Feature Testing
+
+To assist in crawling GenAI web app features, install Playwright:
+
+```bash
+playwright install
+```
+
+*Various browsers, including Chromium, should be installed. Ignore the error at the end.*
 
 
 ## Usage
