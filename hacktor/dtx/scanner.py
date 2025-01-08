@@ -21,6 +21,16 @@ from markdown_builder.document import MarkdownDocument
 from .parser import DetoxioEvaluationResponseParser, DetoxioResponseEvaluationResult
 
 
+MODULES_LINEAGE_MAP = {
+    "OWASP-LLM-APP":"DETOXIO.ATTACKIO",
+    "LLM-RISKS": "DETOXIO",
+    "JAILBREAK-BENCH": "DETOXIO.JAILBREAKBENCH",
+    "ADVBENCH": "DETOXIO.ADVBENCH",
+    "LLM-RULES": "DETOXIO.LLM_RULES",
+    "HACKPROMPT": "DETOXIO.HACKPROMPT",
+}
+
+
 class DetoxioGeneratorFilterBuilder:
     def __init__(self):
         self._filter = dtx_prompts_pb2.PromptGenerationFilterOption()
@@ -102,7 +112,7 @@ class DetoxioGeneratorFilterBuilder:
     def lineage(self, value:str):
         if not value:
             return self
-        possible_values = ["detoxio.attackio", "detoxio", "detoxio.jailbreakbench", "detoxio.advbench"]
+        possible_values = list(map(lambda x: x.lower(), MODULES_LINEAGE_MAP.values()))
         if not value or value.lower() not in possible_values:
             raise ValueError(f"Unknown lineage {value} not in {','.join(possible_values)}")
         self.label("lineage", value.lower())

@@ -1,12 +1,12 @@
 import logging
-import base64
+import json
 from collections import deque
 import networkx as nx
 from google.protobuf.json_format import MessageToDict
 from .crawler import ModelCrawler, TraversalStrategy
 from hacktor.dtx.scanner import DetoxioModelDynamicScanner, DetoxioModelDynamicScannerSession
 import proto.dtx.services.prompts.v1.prompts_pb2 as dtx_prompts_pb2
-
+from dtx_apis_prompts_utils.prompt import DtxPromptServiceOutputFormatParser
 from dtx_assessment_api.finding_client import (
     AssessmentFindingClient, 
     AssessmentFindingBuilder
@@ -196,19 +196,18 @@ class StatefulModelFuzzer:
         # Generate prompts
         logging.info("Initialized Session..")
         prompt_generator = self._generate_prompts(session, 
-                                                  prompt_filter=self.config.prompt_filter)
+                                                prompt_filter=self.config.prompt_filter)
         seq_error_count = 0
         try:
-            for i, prompt in enumerate(prompt_generator):
+            for _, prompt in enumerate(prompt_generator):
                 logging.debug("Generated Prompt: \n%s", prompt.data.content)
                 # self._printer.trace(f"[{i+1}] Generated Prompt: {prompt.data.content[0:100]}...")
                 
-                prompt_str = prompt.data.content
-                prompt_encoding = prompt.source_labels.get("_prompt_encoding")
-                if prompt_encoding == 'base64':
-                    decoded_prompt_str = base64.b64decode(prompt_str).decode('utf-8')
-                else:
-                    decoded_prompt_str = prompt_str
+                
+                dtx_prompt = DtxPromptServiceOutputFormatParser.parse(prompt)                
+                ## TODO For now we will convert Multi Turn prompt into a single string. Later we need to support multiple turn prompts
+                decoded_prompt_str = dtx_prompt.prompt_as_str()
+                
                 try:
                     # Simulate model output
                     model_output_text = self.model.invoke(decoded_prompt_str)
@@ -261,7 +260,7 @@ class StatefulModelFuzzer:
     def _publish_result_to_detoxio_platform(self, model_eval_response:dtx_prompts_pb2.PromptEvaluationResponse):   
         logging.debug("Publishing results to detoxio platform")  
         eval_res_dict = MessageToDict(model_eval_response, 
-                                      preserving_proto_field_name=True)
+                                    preserving_proto_field_name=True)
         assessment_finding = (self.assessment_finding_builder
             .set_record(eval_res_dict)
             .set_timestamp()
@@ -332,26 +331,3 @@ class StatefulModelFuzzer:
         """
         pass
 
-
-
-# Example usage:
-# options = ModelCrawlerOptions(max_depth=3, initial_prompts=["Hello", "How are you?"])
-# model_factory = YourModelFactoryImplementation()
-# prompt_generator = YourNextPromptGeneratorImplementation()
-# crawler = ModelCrawler(model_factory, prompt_generator, options)
-# crawler.crawl()
-
-# fuzzer_builder = ModelCrawledStateBuilder(crawler)
-# model_fuzzer = fuzzer_builder.build(strategy=TraversalStrategy.BFS)  # or TraversalStrategy.DFS
-
-# model_fuzzer.start()
-# response = model_fuzzer.invoke("Hello")
-# print("Response:", response)
-
-# try:
-#     while True:
-#         model_fuzzer.next()  # Traverse to the next node
-#         response = model_fuzzer.invoke("Next prompt text")
-#         print("Response:", response)
-# except StopIteration:
-#     print("Traversal complete. No more nodes to traverse.")

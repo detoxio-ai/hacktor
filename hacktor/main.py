@@ -10,6 +10,7 @@ from hacktor.workflow.scanner import (
 from hacktor.utils.printer import Printer
 from hacktor.workflow.phases import ScanWorkflow
 from hacktor.models.wrapper import Registry
+from hacktor.dtx.scanner import MODULES_LINEAGE_MAP
 
 def setup_logging(args):
     log_level = getattr(args, 'log_level', 'WARN').upper()
@@ -26,12 +27,8 @@ def check_prerequisites(args):
         return False
     return True
 
-MODULES_LINEAGE_MAP = {
-    "OWASP-LLM-APP":"DETOXIO.ATTACKIO",
-    "LLM-RISKS": "DETOXIO",
-    "JAILBREAK-BENCH": "DETOXIO.JAILBREAKBENCH",
-    "ADVBENCH": "DETOXIO.ADVBENCH",
-}
+###
+# Update MODULES_LINEAGE_MAP in dtx/scanner file
 
 def _create_prompt_filter(args):
     filterb = DetoxioGeneratorFilterBuilder()
@@ -74,8 +71,8 @@ Human Assisted Testing of GenAI Apps and Models:
     common_options.add_argument("--threat-category", type=str, choices=threat_cats, help=f"Filter Prompts related to the threat categories.")
     common_options.add_argument("--deceptiveness", type=str, choices=["LOW", "MEDIUM", "HIGH"], help="How deceptive the prompts are?")
     common_options.add_argument("--attack_module", type=str, choices=MODULES_LINEAGE_MAP.keys(), help="Activate specific attack modules")
-    common_options.add_argument("--max_crawling_depth", type=int, default=4,  help="Depth of crawling")
-    common_options.add_argument("--max_crawling_steps", type=int, default=10,  help="Number of GenAI States to discover")
+    common_options.add_argument("--max_crawling_depth", type=int, default=1,  help="Depth of crawling")
+    common_options.add_argument("--max_crawling_steps", type=int, default=1,  help="Number of GenAI States to discover")
     common_options.add_argument("--initial_crawling_prompt", type=str, default="Hello",  help="Initial Crawling Prompt to start conversation")
 
 
@@ -89,7 +86,7 @@ Human Assisted Testing of GenAI Apps and Models:
     webapps_parser.add_argument("--skip_testing", action="store_true", help="Skip Testing, possibly just record session")
 
     webapps_parser.add_argument("--save_session", action="store_true", help="Save Crawling Session for next time")
-    webapps_parser.add_argument("--use_ai", action="store_true", help="Use AI to perform parsing and crawling, if applicable")
+    webapps_parser.add_argument("--use_ai", action="store_true", default=True, help="Use AI to perform parsing and crawling, if applicable")
     webapps_parser.add_argument("--prompt_prefix", type=str, default="", help="Add a prefix to every prompt to make prompts more contextual")
     webapps_parser.add_argument("-m", "--speed", type=int, default=300, help="Set time in milliseconds for executions of APIs.")
     webapps_parser.add_argument("-b", "--browser", type=str, help="Browser type to run playwright automation on. Allowed values are Webkit, Firefox, and Chromium.")
@@ -101,7 +98,7 @@ Human Assisted Testing of GenAI Apps and Models:
     llm_parser.add_argument("registry", type=str, choices=Registry.list_options(), help="Specify LLM Registry")
     llm_parser.add_argument("uri", type=str, help="Location of the model being hosted and accessible")
     llm_parser.add_argument("--model_id", type=str, help="Model ID, in case, id is different from url")    
-    llm_parser.add_argument("--use_ai", action="store_true", help="Use AI to perform parsing and crawling, if applicable")
+    llm_parser.add_argument("--use_ai", action="store_true", default=True, help="Use AI to perform parsing and crawling, if applicable")
     llm_parser.add_argument("--prompt_prefix", type=str, default="", help="Add a prefix to every prompt to make prompts more contextual")
 
 
@@ -113,7 +110,7 @@ Human Assisted Testing of GenAI Apps and Models:
     burp_parser.add_argument("-r", "--request", type=str, help="Path to input burp request file.")
     burp_parser.add_argument("--response_param", type=str, help="Parameter which holds the GenAI response.")
     burp_parser.add_argument("--marker", type=str, default="", help=f"FUZZ marker. By Default, the tool will detect any of these markers: {' '.join(FUZZING_MARKERS)}")
-    burp_parser.add_argument("--use_ai", action="store_true", help="Use AI to perform parsing and crawling, if applicable")
+    burp_parser.add_argument("--use_ai", action="store_true", default=True, help="Use AI to perform parsing and crawling, if applicable")
     
     return parser
 
