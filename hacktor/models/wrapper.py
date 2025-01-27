@@ -4,6 +4,8 @@ from enum import Enum
 from typing import List
 from .groq import GroqModel
 from .openai import OpenAIModel
+from .eliza import ElizaAgent
+from ._ollama import OllamaModel
 from hacktor.webapp.gradio import GradioUtils
 from hacktor.webapp.model import GradioAppModel
 
@@ -18,6 +20,8 @@ class Registry(Enum):
     OPENAI = "OPENAI"
     HF = "HF"  # Hugging Face
     HF_SPACE = "HF_SPACE"
+    ELIZA = "ELIZA"
+    OLLAMA = "OLLAMA"
 
     @classmethod
     def list_options(cls):
@@ -39,6 +43,10 @@ class LLMModel:
             # Detect the Gradio API signature
             self.model = GradioAppModel(model_id, api_name, predict_signature, fuzz_markers)
             self.model.prechecks(use_ai=use_ai)
+        elif registry == Registry.ELIZA:
+            self.model = ElizaAgent(model_id)   
+        elif registry == Registry.OLLAMA:
+            self.model = OllamaModel(model_id)        
         else:
             raise Exception("Undefined registry" + registry)
 

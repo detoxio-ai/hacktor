@@ -36,6 +36,7 @@ langchain-openai = "^0.2.0"
 langchain-groq = "^0.2.0"
 openai = "^1.57.0"
 dtx-apis-prompts-utils = "^0.2.0"
+ollama = "^0.4.7"
 
 
 [[tool.poetry.source]]
